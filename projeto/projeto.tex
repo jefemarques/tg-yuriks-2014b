@@ -1,0 +1,140 @@
+% !TEX TS-program = pdflatex
+% !TEX encoding = UTF-8 Unicode
+
+\documentclass[12pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[brazilian]{babel}
+
+%%% PAGE DIMENSIONS
+\usepackage{geometry} % to change the page dimensions
+\geometry{a4paper} % or letterpaper (US) or a5paper or....
+% \geometry{margin=2in} % for example, change the margins to 2 inches all round
+% \geometry{landscape} % set up the page for landscape
+
+\usepackage{graphicx} % support the \includegraphics command and options
+
+% \usepackage[parfill]{parskip} % Activate to begin paragraphs with an empty line rather than an indent
+
+%%% PACKAGES
+\usepackage{amsfonts}
+\usepackage{color}
+%\usepackage{booktabs} % for much better looking tables
+%\usepackage{array} % for better arrays (eg matrices) in maths
+%\usepackage{paralist} % very flexible & customisable lists (eg. enumerate/itemize, etc.)
+\usepackage{verbatim} % adds environment for commenting out blocks of text & for better verbatim
+%\usepackage{subfig} % make it possible to include more than one captioned figure/table in a single float
+% These packages are all incorporated in the memoir class to one degree or another...
+
+\def\Cpp{{C\nolinebreak[4]\hspace{-.05em}\raisebox{.4ex}{\tiny\bf ++}}}
+\newcommand{\todo}[1]{\textsf{\color{red}#1}}
+
+%%% END Article customizations
+
+\title{Paralelização do compilador de Rust}
+\author{Yuri Kunde Schlesner}
+%\date{} % Activate to display a given date or no date (if empty), otherwise the current date is printed 
+
+\begin{document}
+\maketitle
+
+\section{Identificação}
+
+\begin{description}
+	\item[Resumo:] \todo{TODO.}
+	\item[Período de execução:] Setembro de 2014 a Dezembro de 2014
+	\item[Unidades participantes:] ~\\ Curso de Ciência da Computação \\ Departamento de Eletrônica e Computação
+	\item[Área de conhecimento:] Ciência da Computação
+	\item[Linha de Pesquisa:] Compiladores, Programação Paralela
+	\item[Tipo de projeto:] Trabalho de Conclusão de Curso
+	\item[Participantes:] ~\\ Profª Andrea Schwertner Charão -- Orientadora \\ Yuri Kunde Schlesner -- Orientando
+\end{description}
+
+\section{Introdução}
+
+Um dos principais riscos presentes quando se opera um sistema de computadores é que ele seja atacado por invasores maliciosos. Embora alguns ataques sejam permitidos pela má configuração de servidores e sistemas de segurança, uma significante parte é realizada explorando falhas de programação no software rodando nesses servidores. Erros como \emph{buffer} ou \emph{stack overflows}, acesso a ponteiros nulos e sincronização inadequada entre \emph{threads}, assim como outros tipo de erros de memória, permitem um atacante manipular e acessar informações que não deveria, alterando o funcionamento do software. 
+
+Essas e muitas outras classes de erros só são possíveis devido a escolha de C e \Cpp\ de permitir acessos não-checados a memória. Outras linguagens, como Java, Python e inúmeras outras linguagens de alto-nível, fizeram a escolha de sacrificar performance e controle para eliminar estes tipos de erro, forçando o uso de \emph{garbage collection} e acessos checados a arrays.
+
+No entanto, existem contextos em que o uso dessas técnicas é considerado inaceitável, como por exemplo no desenvolvimento de \emph{kernels} ou \emph{drivers} para sistemas operacionais; em aplicações de tempo real, como automação e controle ou sistemas de prevenção de acidentes; ou aplicações que requerem alta performance, como computação científica, servidores que precisam responder a milhares de requisições por segundo ou jogos. Estes tipos de tarefas geralmente são tituladas ``programação de sistemas''.
+
+A linguagem de programação \emph{Rust}, um projeto de pesquisa da \emph{Mozilla Research}, tem como objetivo preencher este nicho como uma linguagem de programação de sistemas que foca simultaneamente em alta-performance, segurança e expressividade. Ela atinge isso usando um modelo tradicional de compilação prévia (\emph{ahead of time}) e um sistema de tipos que permite a verificação automática dos usos de ponteiros durante a compilação, eliminando a possibilidade de acontecerem erros de memória, mas sem introduzir penalidades excessivas de performance ou consumo de memória.
+
+% Versão não-resumida
+\begin{comment}
+Um dos principais ríscos presentes quando se opera um sistema de computadores é que ele seja atacado por invasores maliciosos. Atacantes podem causar danos ao sistema, roubar informações privilegiadas ou até mesmo secretamente tomar controle dele para seus fins. Embora alguns desses ataques são permitidos pela má configuração de servidores e sistemas de segurança, uma significante parte é realizada explorando falhas de programação no software rodando nesses servidores. Erros como \emph{buffer} ou \emph{stack overflows}, assim como outros tipo de erros de memória, permitem um atacante manipular e acessar informações que não deveria, alterando o funcionamento do software. Erros de acesso a ponteiro nulo, embora menos danosos, podem ser usados para negar o acesso a sistemas. Sincronização incorreta do acesso à dados em um sistema concorrente pode provocar \emph{deadlocks} ou \emph{data races} (modificação e/ou leitura simultâneas mesma região de memória.)
+
+Essas e muitas outras classes de erros só são possíveis devido a escolha de C e \Cpp\, ainda as principais linguagens nas quais servidores de alta performance são escritos, de permitir acessos não-checados a, e requerer o gerenciamento manual de memória. Adotando-se boas práticas de programação, é possível reduzir, mas não efetivamente eliminar, esses tipos de erros. Outra linguagens, como Java, Python e inúmeras outras linguagens de alto-nível, fizeram a escolha de sacrificar performance e controle para eliminar estes tipos de erro, forçando o uso de \emph{garbage collection} e acessos checados a arrays.
+
+No entanto, existem contextos em que o uso dessas técnicas é considerado inaceitável: No desenvolvimento de um \emph{kernel} ou drivers para um sistema operacional, ou de sistemas embarcados, não é possível depender de uma \emph{runtime} como necessária para \emph{garbage collection} ou linguagens interpretadas. Em aplicações de tempo real, como automação e controle ou sistemas de segurança ela introduz uma variabilidade de tempo e não determinismo inaceitável. Em aplicações de alta performance, como computação científica, servidores que precisam responder a milhares de requisições por segundo ou jogos, o gerenciamento automático de memória introduz um \emph{overhead} significativo. Esses tipos de tarefas geralmente são tituladas ``programação de sistemas''.
+
+A linguagem de programação \emph{Rust}, um projeto de pesquisa da \emph{Mozilla Research}, tem como objetivo preencher este nicho como uma linguagem de programação de sistemas que foca simultaneamente em alta-performance, segurança e expressividade. Ela atinge isso usando um modelo tradicional de compilação prévia (\emph{Ahead of time}, ao contrário de compilação \emph{just in time}.) e um sistema de tipos que permite a verificação automática dos usos de ponteiros durante a compilação, eliminando a possibilidade de acontecerem erros de memória como os mencionados anteriormente, mas sem introduzir penalidades excessivas de performance ou consumo de memória.
+\end{comment}
+
+\section{Objetivos}
+
+\subsection{Objetivo Geral}
+
+O objetivo geral deste trabalho é realizar otimizações e re-estruturar o \emph{rustc}, o compilador oficial de \emph{Rust}, de forma que ele faça melhor uso de processadores com múltiplos núcleos e reutilize o trabalho de compilações anteriores, afim de reduzir o tempo necessário para a compilação de programas.
+
+\subsection{Objetivos Específicos}
+\begin{itemize}
+	\item Estudar a arquitetura interna do compilador e identificar quais módulos podem realizar seu trabalho independentemente.
+	\item Realizar modificações que separem o processo de compilação em partes, e executem estas partes simultaneamente.
+	\item Se mostrar-se viável, fazer o compilador detectar etapas para as quais os dados de entrada não mudaram, e portanto não precisam ser re-processadas.
+	\item Realizar medições de performance para avaliar os ganhos de tempo atingidos pelas modificações.
+	\item Caso estas mostrem-se vantajosas, integrar as mudanças na versão oficial do compilador.
+\end{itemize}
+
+\section{Justificativa}
+
+A Internet, e sistemas de computadores no geral, hoje constituem uma parte vital da infraestrutura global. Consequentemente, ataques a essa infraestrutura causam perdas, econômicas ou não, e portanto é interessante incentivar o uso e desenvolvimento de linguagens inovadoras, como \emph{Rust}, que ajudem a reduzir os riscos desses ataques.
+
+Para ajudar com a adoção de uma linguagem, é importante que ela seja atrativa para potenciais programadores que estejam buscando uma oportunidade de se livrar de dificuldades que já encontraram em outras linguagens, e rápidos ciclos de iteração, atingidos através duma diminuição do tempo de compilação, são um fator importante a se considerar para atingir esse objetivo. (Longos tempos de compilação são uma crítica frequentemente dirigida a \Cpp, por exemplo.)
+
+\section{Revisão de Literatura}
+
+\todo{TODO.}
+
+\section{Metodologia}
+
+Dado seu caráter prático, de resolver um problema específico em um determinado domínio, esta pesquisa se enquadra como pesquisa aplicada. Como o objetivo será de explorar o possível espaço de soluções arquiteturais para o problema, e depois documentar quais destas mostraram-se adequadas, é uma pesquisa exploratória.\todo{Descritiva?}
+
+\section{Plano de Atividades e Cronograma}
+
+\begin{enumerate}
+	\item \label{activity:study} \textbf{Estudar a arquitetura interna do compilador:} Primeiro será feito um levantamento da estrutura geral do compilador, afim de identificar o trabalho necessário para e quais as tarefas que podem ser paralelizadas. Caso fique evidente que serão necessárias grandes mudanças na arquitetura do compilador, estas também serão planejadas com antecedência.
+	\item \label{activity:parallelization} \textbf{Divisão/paralelização da compilação:} Aqui será realizado o trabalho de implementação, além da finalização dos detalhes arquiteturais de mais baixo nível, para permitir que o compilador utilize vários núcleos do processador simultâneamente. Este trabalho fará uso do conhecimento adquirido e do planejamento realizado na etapa \ref{activity:study}.
+	\item \label{activity:reuse} \textbf{Re-utilização de compilações anteriores:} Será adicionado ao compilador a capacidade de re-utilizar resultados de compilações anteriores nos quais os arquivos fonte que influenciem a compilação não tenham sofrido alterações que afetem o resultado. Aqui será novamente utilizado as informações coletadas na etapa \ref{activity:study}.
+	\item \label{activity:benchmark} \textbf{Medições de performance:} Para averiguar o impacto das mudanças efetuadas nas etapas \ref{activity:parallelization} e \ref{activity:reuse}, serão feitas medições de tempo e de performance (utilizando um \emph{profiler}). Esta etapa contribuirá uma medição quantitativa do sucesso obtido nesta pesquisa em alcançar seus objetivos.
+	\item \label{activity:merging} \textbf{Integração das mudanças:} Afim de beneficiar a comunidade geral de \emph{Rust}, as modificações efetuadas serão submetidas devolta ao projeto, para aprovação dos membros do time de desenvolvimente e subsequente integração. Espera-se que esse seja um processo contínuo, com pedidos de comentários dos desenvolvedores afim de maximizar a qualidade do trabalho.
+\end{enumerate}
+
+Espera-se que o desenvolvimento das atividades siga o seguinte cronograma:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{c|cccc}
+	Etapa & Setembro & Outubro & Novembro & Dezembro \\ \hline
+	\ref{activity:study} & \checkmark & & & \\
+	\ref{activity:parallelization} & \checkmark & \checkmark & & \\
+	\ref{activity:reuse} & & & \checkmark & \checkmark \\
+	\ref{activity:benchmark} & \checkmark & \checkmark & \checkmark & \checkmark \\
+	\ref{activity:merging} & & \checkmark & & \checkmark \\
+\end{tabular}
+\caption{Cronograma de Atividades}
+\end{table}
+
+\section{Recursos}
+
+Para a realização deste trabalho será utilizado apenas equipamento pessoal do pesquisador, visto que não é necessário o uso de qualquer equipamento especial além de um computador para desenvolvimento.
+
+\section{Resultados Esperados}
+
+Ao término deste trabalho, espera-se que seja disponibilizada uma versão do compilador de \emph{Rust} para realizar a compilação de programas de forma paralela, utilizando vários núcleos de CPU, e re-utilizando trabalho de compilações anteriores, de forma que esta seja completada em menos tempo. Caso os resultados, baseados nas medições de performance realizadas, mostrem-se suficientemente vantajosos, espera-se que as mudanças presentes nessa versão sejam integradas na versão oficial do compilador, de forma a beneficiar todos os membros da comunidade de usuários de \emph{Rust}.
+
+\section{Referências}
+
+\todo{TODO.}
+
+\end{document}
