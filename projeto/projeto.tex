@@ -1,10 +1,14 @@
-% !TEX TS-program = pdflatex
+% !TEX TS-program = XeLaTeX
 % !TEX encoding = UTF-8 Unicode
 
 \documentclass[12pt]{article}
 
-\usepackage[utf8]{inputenc}
+%\usepackage[utf8]{inputenc}
 \usepackage[brazilian]{babel}
+
+\usepackage{fontspec}
+\setmainfont{Linux Libertine G}
+\linespread{1.05}
 
 %%% PAGE DIMENSIONS
 \usepackage{geometry} % to change the page dimensions
@@ -23,10 +27,17 @@
 %\usepackage{array} % for better arrays (eg matrices) in maths
 %\usepackage{paralist} % very flexible & customisable lists (eg. enumerate/itemize, etc.)
 \usepackage{verbatim} % adds environment for commenting out blocks of text & for better verbatim
+\usepackage{microtype}
 %\usepackage{subfig} % make it possible to include more than one captioned figure/table in a single float
 % These packages are all incorporated in the memoir class to one degree or another...
 
-\def\Cpp{{C\nolinebreak[4]\hspace{-.05em}\raisebox{.4ex}{\tiny\bf ++}}}
+\usepackage[hidelinks]{hyperref}
+
+% For Computer Modern:
+%\def\Cpp{{C\nolinebreak[4]\hspace{-.05em}\raisebox{.4ex}{\tiny\bf ++}}}
+% For Linux Libertine G
+\def\Cpp{{C\nolinebreak[4]\raisebox{.20ex}{\small\bf++}}}
+
 \newcommand{\todo}[1]{\textsf{\color{red}#1}}
 
 %%% END Article customizations
@@ -45,43 +56,43 @@
 	\item[Período de execução:] Setembro de 2014 a Dezembro de 2014
 	\item[Unidades participantes:] ~\\ Curso de Ciência da Computação \\ Departamento de Eletrônica e Computação
 	\item[Área de conhecimento:] Ciência da Computação
-	\item[Linha de Pesquisa:] Compiladores, Programação Paralela
+	\item[Linha de Pesquisa:] Computação Gráfica, Linguagens de Programação
 	\item[Tipo de projeto:] Trabalho de Conclusão de Curso
 	\item[Participantes:] ~\\ Profª Andrea Schwertner Charão -- Orientadora \\ Yuri Kunde Schlesner -- Orientando
 \end{description}
 
 \section{Introdução}
 
-Um dos principais riscos presentes quando se opera um sistema de computadores é que ele seja atacado por invasores maliciosos. Embora alguns ataques sejam permitidos pela má configuração de servidores e sistemas de segurança, uma significante parte é realizada explorando falhas de programação no software rodando nesses servidores. Erros como \emph{buffer} ou \emph{stack overflows}, acesso a ponteiros nulos e sincronização inadequada entre \emph{threads}, assim como outros tipo de erros de memória, permitem um atacante manipular e acessar informações que não deveria, alterando o funcionamento do software. 
+A \emph{Computação Gráfica} é a area da Ciencia da Computação que estuda tópicos relacionados a criação, análise e manipulação de imagens e conceitos relacionados. Dentre estas, a síntese (ou renderização) de imagens é onde uma imagem é criada de forma computacional, a partir de um modelo matemático e frequentemente buscando o fotorealismo. Tem uma vasta quantidade de aplicações práticas: É usada na engenharia, durante o projeto de máquinas ou construções; na arquitetura para a visualização de espaços antes que sejam construídos; para entretenimento, em efeitos especiais de filmes ou em jogos 3D e em muitas outras aplicações.
 
-Essas e muitas outras classes de erros só são possíveis devido a escolha de C e \Cpp\ de permitir acessos não-checados a memória. Outras linguagens, como Java, Python e inúmeras outras linguagens de alto-nível, fizeram a escolha de sacrificar performance e controle para eliminar estes tipos de erro, forçando o uso de \emph{garbage collection} e acessos checados a arrays.
+Como a geração de imagens fotorealistas involve essencialmente uma simulação completa da física da luz, um processo proibitivamente lento e complexo, são utilizadas simplificações e modelos. No passado, devido a limitada capacidade computacional disponível, eram utilizadas aproximações grosseiras que, enquanto produziam imagens atrativas, não eram muito realísticas, especialmente no quesito da aparência das superfícies de suas interações com a luz. Com o aumento do poder computacional disponível, vem sendo usados modelos cada vez mais fiéis a realidade e que produzem imagens cada vez mais convincentes, algumas vezes indistinguíveis de uma fotografia real.
 
-No entanto, existem contextos em que o uso dessas técnicas é considerado inaceitável, como por exemplo no desenvolvimento de \emph{kernels} ou \emph{drivers} para sistemas operacionais; em aplicações de tempo real, como automação e controle ou sistemas de prevenção de acidentes; ou aplicações que requerem alta performance, como computação científica, servidores que precisam responder a milhares de requisições por segundo ou jogos. Estes tipos de tarefas geralmente são intituladas ``programação de sistemas''.
+\emph{Path tracing} é um método de renderização que assume que a luz se comporta como uma partícula e calcula uma imagem traçando uma série de raios pelos caminhos através quais a luz viajaria quando refletida através de uma cena. Atualmente é um dos algorítmos mais usados quando são demandadas imagens com um grau de realismo extremamente alto, devido a sua abilidade de simular o comportamento da luz com relativa precisão.
 
-A linguagem de programação \emph{Rust}, um projeto de pesquisa da \emph{Mozilla Research}, tem como objetivo preencher este nicho como uma linguagem de programação de sistemas que foca simultaneamente em alta-performance, segurança e expressividade. Ela atinge isso usando um modelo tradicional de compilação prévia (\emph{ahead of time}) e um sistema de tipos que permite a verificação automática dos usos de ponteiros durante a compilação, eliminando a possibilidade de acontecerem erros de memória, mas sem introduzir penalidades excessivas de performance ou consumo de memória.
+No entanto, este realismo vem ao custo de muito poder de processamento, e mesmo com o avanço tecnológico de CPUs, a renderização de imagens continua sendo uma das tarefas mais árduas para processadores. Sistemas de renderização profissionais são quase exclusivamente escritos em \Cpp, e não em linguagens de mais alto nível, devído as penalidades de performance que impõem, e sistemas mais recentes chegam a fazer o uso de GPUs para acelerar a imensa quantidade de cálculos necessária. Tendo em vista a baixa expressividade de \Cpp comparada a estas outras linguagens, torna-se interessante explorar alternativas que permitam mais fácil desenvolvimento, mas sem sacrificar a performance requerida.
+
+A linguagem de programação \emph{Rust}, um projeto de pesquisa da \emph{Mozilla Research}, tem como seu objetivo ser uma união entre linguagens de programação de sistemas e as tidas como ``linguagens de alto-nível'', focando simultâneamente em alta-performance, segurança e expressividade. Ela atinge isso usando um modelo tradicional de compilação prévia (\emph{ahead of time}) e um sistema de tipos que permite a verificação automática dos usos de ponteiros durante a compilação, eliminando a possibilidade de acontecerem erros de memória, mas sem introduzir penalidades excessivas de performance ou consumo de memória, ao mesmo tempo que integra conceitos mais recentes de linguagens de programação que aumentam sua expressividade e capacidade de facilmente descrever programas complexos.
 
 \section{Objetivos}
 
 \subsection{Objetivo Geral}
 
-O objetivo geral deste trabalho é realizar otimizações e re-estruturar o \emph{rustc}, o compilador oficial de \emph{Rust}, de forma que ele faça melhor uso de processadores com múltiplos núcleos e reutilize o trabalho de compilações anteriores, afim de reduzir o tempo necessário para a compilação de programas.
+O objetivo geral deste trabalho é escrever um \emph{path tracer} simples em Rust que sirva de um exemplo educativo, juntamente com a fundamentação matemática que será descrita no relatório, de como implementar este tipo de algorítmo. Além disto, será uma oportunidade de fazer uma comparação qualitativa e quantitativa entre esta lingaugem e \Cpp, nos aspectos de performance e organização de código.
 
 \subsection{Objetivos Específicos}
 \begin{itemize}
-	\item Estudar a arquitetura interna do compilador e identificar quais módulos podem realizar seu trabalho independentemente.
-	\item Realizar modificações que separem o processo de compilação em partes, e executem estas partes simultaneamente.
-	\item Se mostrar-se viável, fazer o compilador detectar etapas para as quais os dados de entrada não mudaram, e portanto não precisam ser re-processadas.
-	\item Realizar medições de performance para avaliar os ganhos de tempo atingidos pelas modificações.
-	\item Caso estas mostrem-se vantajosas, integrar as mudanças na versão oficial do compilador.
+	\item Re-escrever um renderizador (atualmente escrito em \Cpp) utilizando a linguagem Rust.
+	\item Realizar uma comparação de performance e clareza de código entre as duas versões.
+	\item Implementar melhoras estruturais e algorítmicas na nova versão.
+	\item Documentar a fundamentação teórica dos algorítmos utilizados.
+	\item Analisar como as funcionalidades de Rust ajudam ou não a escrever um programa deste tipo.
 \end{itemize}
 
 \section{Justificativa}
 
-Normalmente, um compilador utilizar apenas um núcleo não é um grande problema, pois cada arquivo fonte é compilado separadamente e portanto basta invocar várias instâncias do compilador simultâneamente para processar cada arquivo. Os objetos intermediários gerados são então passados por um \emph{linker}, que os úne para produzir um binário final, num processo geralmente mais simples, e portanto mais rápido, que a compilação do mesmos.\footnote{O processo de \emph{linking} é, no entanto, também uma etapa demorada em projetos de larga escala com muitos objetos intermediários. Por esse motivo, alguns \emph{linkers} possuem parallelização interna deste processo.}
+Rust é uma linguagem relativamente nova e, embora aplicações gráficas de alta performance sejam um dos seus públicos alvo, ainda não existe uma quantidade significativa de programas deste tipo que valide a lingaugem para este propósito. A experiência e resultados adquiridos durante a realização deste trabalho podem ajudar a guiar o desenvolvimento da linguagem para atingir este fim.
 
-A linguagem \emph{Rust} diverge deste modelo de compilação e compila um programa ou biblioteca inteira como uma única unidade. Isto é necessário pois não existe uma forma externa das declarações do programa (como arquivos \emph{header} em C), então todo o código fonte precisa ser lido na mesma invocação do compilador para descobrir os tipos e funções presentes. No momento, todo o processo é feito de forma serial.
-
-Para ajudar com a adoção de uma linguagem, é importante que ela seja atrativa para potenciais programadores que estejam buscando uma oportunidade de se livrar de dificuldades que já encontraram em outras linguagens, e rápidos ciclos de iteração, atingidos através duma diminuição do tempo de compilação, são um fator importante a se considerar para atingir esse objetivo. (Longos tempos de compilação são uma crítica frequentemente dirigida a \Cpp, por exemplo.) Portanto, este trabalho ajudará a adoção de \emph{Rust} em projetos maiores que enfrentariam problemas com tempos de compilação.
+Além disto, embora existam uma variadade de renderizadores pequenos que tem como objetivo servir de exemplo para outras implementações, eles no geral não possuem uma documentação adequada que explique os princípios teóricos e matemáticos por trás deles. Espera-se que este trabalho preencha este nicho, afim de ajudar futuros pesquisadores ou estudantes em busca deste conhecimento.
 
 \section{Revisão de Literatura}
 
@@ -89,16 +100,16 @@ Para ajudar com a adoção de uma linguagem, é importante que ela seja atrativa
 
 \section{Metodologia}
 
-Dado seu caráter prático, de resolver um problema específico em um determinado domínio, esta pesquisa se enquadra como pesquisa aplicada. Como o objetivo será de explorar o possível espaço de soluções arquiteturais para o problema, e depois documentar quais destas mostraram-se adequadas, é uma pesquisa exploratória.
+Como tem como objetivo principal produzir uma síntese do conhecimento da área esta pesquisa tem um objetivo exploratório\todo{(descritivo?)}, e como irá produzir um trabalho que, além de guiar esta exploração, exemplificará a aplicação deste conhecimento, é também aplicada.
 
 \section{Plano de Atividades e Cronograma}
 
 \begin{enumerate}
-	\item \label{activity:study} \textbf{Estudar a arquitetura interna do compilador:} Primeiro será feito um levantamento da estrutura geral do compilador, afim de identificar o trabalho necessário para e quais as tarefas que podem ser paralelizadas. Caso fique evidente que serão necessárias grandes mudanças na arquitetura do compilador, estas também serão planejadas com antecedência.
-	\item \label{activity:parallelization} \textbf{Divisão/paralelização da compilação:} Aqui será realizado o trabalho de implementação, além da finalização dos detalhes arquiteturais de mais baixo nível, para permitir que o compilador utilize vários núcleos do processador simultâneamente. Este trabalho fará uso do conhecimento adquirido e do planejamento realizado na etapa \ref{activity:study}.
-	\item \label{activity:reuse} \textbf{Re-utilização de compilações anteriores:} Será adicionado ao compilador a capacidade de re-utilizar resultados de compilações anteriores nos quais os arquivos fonte que influenciem a compilação não tenham sofrido alterações que afetem o resultado. Aqui será novamente utilizado as informações coletadas na etapa \ref{activity:study}.
-	\item \label{activity:benchmark} \textbf{Medições de performance:} Para averiguar o impacto das mudanças efetuadas nas etapas \ref{activity:parallelization} e \ref{activity:reuse}, serão feitas medições de tempo e de performance (utilizando um \emph{profiler}). Esta etapa contribuirá uma medição quantitativa do sucesso obtido nesta pesquisa em alcançar seus objetivos.
-	\item \label{activity:merging} \textbf{Integração das mudanças:} Afim de beneficiar a comunidade geral de \emph{Rust}, as modificações efetuadas serão submetidas devolta ao projeto, para aprovação dos membros do time de desenvolvimente e subsequente integração. Espera-se que esse seja um processo contínuo, com pedidos de comentários dos desenvolvedores afim de maximizar a qualidade do trabalho.
+	\item \label{activity:rewrite} \textbf{Re-escrever o renderizador utilizando a linguagem Rust:} O renderizador será baseado em código pré-existente do autor, escrito em \Cpp, que será utilizado como uma base funcional para a implementação em Rust.
+	\item \label{activity:compare} \textbf{Realizar uma comparação entre as duas versões:} As duas versões do renderizador, a nova feita em Rust e a antiga em \Cpp, serão comparadas nos quesitos de performance e de organização do código, afim de identificar avanços ou regressos, e se esses podem ser atribuídos a características de cada linguagem.
+	\item \label{activity:improve} \textbf{Implementar melhoras estruturais e algorítmicas:} A partir daqui, a nova versão do renderizador será aprimorada com algoritmos mais avançados, que permitam uma melhora de performance ou de qualidade de imagem. A maior parte do trabalho aqui será a revisão da bibliografia existente para identificar algorítmos interessantes e entender seu funcionamento.
+	\item \label{activity:document} \textbf{Documentar a fundamentação teórica dos algorítmos:} Com a experiência adquirida durante a implementação, as observações e conclusões do autor serão sintetizadas com o objetivo de tornar claro o funcionamento destes algorítmos e como eles interagem.
+	\item \label{activity:analysis} \textbf{Analisar como as funcionalidades de Rust ajudam ou não a escrever um programa desse tipo:} Continuando o trabalho da etapa \ref{activity:compare}, serão ressaltadas quaisquers constatações feitas durante o desenvolvimento sobre as vantagens ou desvantagens de se utilizar a Rust para este tipo de trabalho.
 \end{enumerate}
 
 Espera-se que o desenvolvimento das atividades siga o seguinte cronograma:
@@ -107,11 +118,11 @@ Espera-se que o desenvolvimento das atividades siga o seguinte cronograma:
 \centering
 \begin{tabular}{c|cccc}
 	Etapa & Setembro & Outubro & Novembro & Dezembro \\ \hline
-	\ref{activity:study} & \checkmark & & & \\
-	\ref{activity:parallelization} & \checkmark & \checkmark & & \\
-	\ref{activity:reuse} & & & \checkmark & \checkmark \\
-	\ref{activity:benchmark} & \checkmark & \checkmark & \checkmark & \checkmark \\
-	\ref{activity:merging} & & \checkmark & & \checkmark \\
+	\ref{activity:rewrite} & \checkmark & & & \\
+	\ref{activity:compare} & \checkmark & & & \\
+	\ref{activity:improve} & & \checkmark & \checkmark & \\
+	\ref{activity:document} & \checkmark & \checkmark & \checkmark & \checkmark \\
+	\ref{activity:analysis} & & & & \checkmark \\
 \end{tabular}
 \caption{Cronograma de Atividades}
 \end{table}
@@ -122,7 +133,7 @@ Para a realização deste trabalho será utilizado apenas equipamento pessoal do
 
 \section{Resultados Esperados}
 
-Ao término deste trabalho, espera-se que seja disponibilizada uma versão do compilador de \emph{Rust} para realizar a compilação de programas de forma paralela, utilizando vários núcleos de CPU, e re-utilizando trabalho de compilações anteriores, de forma que esta seja completada em menos tempo. Caso os resultados, baseados nas medições de performance realizadas, mostrem-se suficientemente vantajosos, espera-se que as mudanças presentes nessa versão sejam integradas na versão oficial do compilador, de forma a beneficiar todos os membros da comunidade de usuários de \emph{Rust}.
+Ao término deste trabalho, espera-se ter uma implementação de um renderizador, escrito em Rust, que seja capaz de produzir imagens fotorealísticas através da implementação de uma variedade de técnicas relacionadas a \emph{path tracing}. Além disso, espera-se que o relatório do trabalho sirva como uma síntese da teoria e funcionamento dos algorítmos implementados, de forma a guiar implementações futuras.
 
 \section{Referências}
 
