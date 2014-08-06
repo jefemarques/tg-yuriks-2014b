@@ -31,7 +31,7 @@
 
 %%% END Article customizations
 
-\title{Paralelização do compilador de Rust}
+\title{Paralelização do compilador da linguagem de programação Rust}
 \author{Yuri Kunde Schlesner}
 %\date{} % Activate to display a given date or no date (if empty), otherwise the current date is printed 
 
@@ -56,20 +56,9 @@ Um dos principais riscos presentes quando se opera um sistema de computadores é
 
 Essas e muitas outras classes de erros só são possíveis devido a escolha de C e \Cpp\ de permitir acessos não-checados a memória. Outras linguagens, como Java, Python e inúmeras outras linguagens de alto-nível, fizeram a escolha de sacrificar performance e controle para eliminar estes tipos de erro, forçando o uso de \emph{garbage collection} e acessos checados a arrays.
 
-No entanto, existem contextos em que o uso dessas técnicas é considerado inaceitável, como por exemplo no desenvolvimento de \emph{kernels} ou \emph{drivers} para sistemas operacionais; em aplicações de tempo real, como automação e controle ou sistemas de prevenção de acidentes; ou aplicações que requerem alta performance, como computação científica, servidores que precisam responder a milhares de requisições por segundo ou jogos. Estes tipos de tarefas geralmente são tituladas ``programação de sistemas''.
+No entanto, existem contextos em que o uso dessas técnicas é considerado inaceitável, como por exemplo no desenvolvimento de \emph{kernels} ou \emph{drivers} para sistemas operacionais; em aplicações de tempo real, como automação e controle ou sistemas de prevenção de acidentes; ou aplicações que requerem alta performance, como computação científica, servidores que precisam responder a milhares de requisições por segundo ou jogos. Estes tipos de tarefas geralmente são intituladas ``programação de sistemas''.
 
 A linguagem de programação \emph{Rust}, um projeto de pesquisa da \emph{Mozilla Research}, tem como objetivo preencher este nicho como uma linguagem de programação de sistemas que foca simultaneamente em alta-performance, segurança e expressividade. Ela atinge isso usando um modelo tradicional de compilação prévia (\emph{ahead of time}) e um sistema de tipos que permite a verificação automática dos usos de ponteiros durante a compilação, eliminando a possibilidade de acontecerem erros de memória, mas sem introduzir penalidades excessivas de performance ou consumo de memória.
-
-% Versão não-resumida
-\begin{comment}
-Um dos principais ríscos presentes quando se opera um sistema de computadores é que ele seja atacado por invasores maliciosos. Atacantes podem causar danos ao sistema, roubar informações privilegiadas ou até mesmo secretamente tomar controle dele para seus fins. Embora alguns desses ataques são permitidos pela má configuração de servidores e sistemas de segurança, uma significante parte é realizada explorando falhas de programação no software rodando nesses servidores. Erros como \emph{buffer} ou \emph{stack overflows}, assim como outros tipo de erros de memória, permitem um atacante manipular e acessar informações que não deveria, alterando o funcionamento do software. Erros de acesso a ponteiro nulo, embora menos danosos, podem ser usados para negar o acesso a sistemas. Sincronização incorreta do acesso à dados em um sistema concorrente pode provocar \emph{deadlocks} ou \emph{data races} (modificação e/ou leitura simultâneas mesma região de memória.)
-
-Essas e muitas outras classes de erros só são possíveis devido a escolha de C e \Cpp\, ainda as principais linguagens nas quais servidores de alta performance são escritos, de permitir acessos não-checados a, e requerer o gerenciamento manual de memória. Adotando-se boas práticas de programação, é possível reduzir, mas não efetivamente eliminar, esses tipos de erros. Outra linguagens, como Java, Python e inúmeras outras linguagens de alto-nível, fizeram a escolha de sacrificar performance e controle para eliminar estes tipos de erro, forçando o uso de \emph{garbage collection} e acessos checados a arrays.
-
-No entanto, existem contextos em que o uso dessas técnicas é considerado inaceitável: No desenvolvimento de um \emph{kernel} ou drivers para um sistema operacional, ou de sistemas embarcados, não é possível depender de uma \emph{runtime} como necessária para \emph{garbage collection} ou linguagens interpretadas. Em aplicações de tempo real, como automação e controle ou sistemas de segurança ela introduz uma variabilidade de tempo e não determinismo inaceitável. Em aplicações de alta performance, como computação científica, servidores que precisam responder a milhares de requisições por segundo ou jogos, o gerenciamento automático de memória introduz um \emph{overhead} significativo. Esses tipos de tarefas geralmente são tituladas ``programação de sistemas''.
-
-A linguagem de programação \emph{Rust}, um projeto de pesquisa da \emph{Mozilla Research}, tem como objetivo preencher este nicho como uma linguagem de programação de sistemas que foca simultaneamente em alta-performance, segurança e expressividade. Ela atinge isso usando um modelo tradicional de compilação prévia (\emph{Ahead of time}, ao contrário de compilação \emph{just in time}.) e um sistema de tipos que permite a verificação automática dos usos de ponteiros durante a compilação, eliminando a possibilidade de acontecerem erros de memória como os mencionados anteriormente, mas sem introduzir penalidades excessivas de performance ou consumo de memória.
-\end{comment}
 
 \section{Objetivos}
 
@@ -88,9 +77,11 @@ O objetivo geral deste trabalho é realizar otimizações e re-estruturar o \emp
 
 \section{Justificativa}
 
-A Internet, e sistemas de computadores no geral, hoje constituem uma parte vital da infraestrutura global. Consequentemente, ataques a essa infraestrutura causam perdas, econômicas ou não, e portanto é interessante incentivar o uso e desenvolvimento de linguagens inovadoras, como \emph{Rust}, que ajudem a reduzir os riscos desses ataques.
+Normalmente, um compilador utilizar apenas um núcleo não é um grande problema, pois cada arquivo fonte é compilado separadamente e portanto basta invocar várias instâncias do compilador simultâneamente para processar cada arquivo. Os objetos intermediários gerados são então passados por um \emph{linker}, que os úne para produzir um binário final, num processo geralmente mais simples, e portanto mais rápido, que a compilação do mesmos.\footnote{O processo de \emph{linking} é, no entanto, também uma etapa demorada em projetos de larga escala com muitos objetos intermediários. Por esse motivo, alguns \emph{linkers} possuem parallelização interna deste processo.}
 
-Para ajudar com a adoção de uma linguagem, é importante que ela seja atrativa para potenciais programadores que estejam buscando uma oportunidade de se livrar de dificuldades que já encontraram em outras linguagens, e rápidos ciclos de iteração, atingidos através duma diminuição do tempo de compilação, são um fator importante a se considerar para atingir esse objetivo. (Longos tempos de compilação são uma crítica frequentemente dirigida a \Cpp, por exemplo.)
+A linguagem \emph{Rust} diverge deste modelo de compilação e compila um programa ou biblioteca inteira como uma única unidade. Isto é necessário pois não existe uma forma externa das declarações do programa (como arquivos \emph{header} em C), então todo o código fonte precisa ser lido na mesma invocação do compilador para descobrir os tipos e funções presentes. No momento, todo o processo é feito de forma serial.
+
+Para ajudar com a adoção de uma linguagem, é importante que ela seja atrativa para potenciais programadores que estejam buscando uma oportunidade de se livrar de dificuldades que já encontraram em outras linguagens, e rápidos ciclos de iteração, atingidos através duma diminuição do tempo de compilação, são um fator importante a se considerar para atingir esse objetivo. (Longos tempos de compilação são uma crítica frequentemente dirigida a \Cpp, por exemplo.) Portanto, este trabalho ajudará a adoção de \emph{Rust} em projetos maiores que enfrentariam problemas com tempos de compilação.
 
 \section{Revisão de Literatura}
 
@@ -98,7 +89,7 @@ Para ajudar com a adoção de uma linguagem, é importante que ela seja atrativa
 
 \section{Metodologia}
 
-Dado seu caráter prático, de resolver um problema específico em um determinado domínio, esta pesquisa se enquadra como pesquisa aplicada. Como o objetivo será de explorar o possível espaço de soluções arquiteturais para o problema, e depois documentar quais destas mostraram-se adequadas, é uma pesquisa exploratória.\todo{Descritiva?}
+Dado seu caráter prático, de resolver um problema específico em um determinado domínio, esta pesquisa se enquadra como pesquisa aplicada. Como o objetivo será de explorar o possível espaço de soluções arquiteturais para o problema, e depois documentar quais destas mostraram-se adequadas, é uma pesquisa exploratória.
 
 \section{Plano de Atividades e Cronograma}
 
