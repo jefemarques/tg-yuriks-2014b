@@ -1,4 +1,4 @@
-% !TEX TS-program = XeLaTeX
+% !TEX TS-program = XeLaTeX+MakeIndex+BibTeX
 % !TEX encoding = UTF-8 Unicode
 
 \documentclass[12pt]{article}
@@ -28,6 +28,7 @@
 %\usepackage{paralist} % very flexible & customisable lists (eg. enumerate/itemize, etc.)
 \usepackage{verbatim} % adds environment for commenting out blocks of text & for better verbatim
 \usepackage{microtype}
+\usepackage[numbers]{natbib}
 %\usepackage{subfig} % make it possible to include more than one captioned figure/table in a single float
 % These packages are all incorporated in the memoir class to one degree or another...
 
@@ -137,7 +138,40 @@ deste trabalho podem ajudar a guiar o desenvolvimento da linguagem para atingir 
 
 \section{Revisão de Literatura}
 
-\todo{TODO.}
+\subsection{Path Tracing}
+
+\emph{Path tracing} faz parte de uma família de algoritmos comumente denominados algoritmos de
+\emph{ray tracing}. Embora também utilizados na física e nas engenharias, no contexto deste trabalho
+são algoritmos que tem como finalidade a produção de imagens que retratam cenas tridimensionais.
+
+Todos os algoritmos desta família se baseiam na ideia fundamental de simular o comportamento da luz
+traçando raios que saem da câmera virtual em direção a cena. Isto é o contrário do que ocorre na
+vida real, onde a luz é emitida de uma fonte e viaja pelo espaço até chegar ao observador, mas não
+afeta negativamente o resultado final e torna o algoritmo computacionalmente viável, pois assegura
+que todo o raio traçado é um que eventualmente chegaria no observador. (Intuitivamente, a maioria da
+luz numa cena não chega até o observador, que subtende um espaço relativamente pequeno da
+cena.)\citep{pharr2010}
+
+Os primeiros algoritmos deste tipo a serem usados simplesmente traçavam um raio por pixel da imagem,
+encontrando a intersecção deste raio com a cena e calculando sua aparência de acordo com algum
+modelo básico de iluminação. Desta forma, não eram reproduzidas sombras, presentes quando um objeto
+se interpões entre o ponto sendo iluminado e a fonte de luz, nem superfícies refletivas, como
+espelhos ou objetos metálicos. Estes tipo de algoritmos vieram a ser chamado de algoritmos de
+\emph{ray casting}.
+
+\Citet{whitted1980} propôs um novo método que soluciona estes problemas. Além do primeiro raio
+partindo da câmera, são também traçados raios que vão do ponto sendo iluminado até cada uma das
+fontes luminosas, permitindo que cada luz só seja adicionada se não estiver obstruída por outro
+objeto e assim permitindo a renderização de sombras. Em superfícies refletivas, outro raio é traçado
+na direção do reflexo, o qual é utilizado para calcular a luminosidade naquela direção, da mesma
+maneira que o raio inicial. Assim, este algoritmo implementa \emph{ray tracing recursivo}.
+
+\Citet{cook1984} aprimoraram o algoritmo de Whitted para que suporte uma variedade de efeitos
+adicionais como superfícies foscas e translúcidas, sombras com penumbras realísticas, \emph{depth of
+field} (foco) e \emph{motion blur}. Todos estes efeitos são realizados através do mesmo método de
+tirar várias amostras em cada ponto da imagem, introduzindo uma variação nas direções ou posições
+traçadas em cada amostra. Embora não tenha o embasamento matemático, esta é a mesma ideia básica
+utilizada posteriormente em algoritmos que utilizam integração Monte Carlo.
 
 \begin{figure}
 	\centering
@@ -149,6 +183,10 @@ deste trabalho podem ajudar a guiar o desenvolvimento da linguagem para atingir 
 		\todo{(referenciar)}
 	}
 \end{figure}
+
+\subsection{Rust}
+
+\todo{TODO}
 
 \section{Metodologia}
 
@@ -183,7 +221,7 @@ vantagens conferidas pela linguagem durante este processo, é uma pesquisa explo
 
 Espera-se que o desenvolvimento das atividades siga o seguinte cronograma:
 
-\begin{table}[h]
+\begin{table}[ht]
 \centering
 \begin{tabular}{c|cccc}
 	Etapa & Setembro & Outubro & Novembro & Dezembro \\ \hline
@@ -207,8 +245,7 @@ Ao término deste trabalho, espera-se ter uma implementação de um renderizador
 seja capaz de produzir imagens fotorrealistas, fazendo uso eficiente do paralelismo oferecido pelo
 hardware.
 
-\section{Referências}
-
-\todo{TODO.}
+\bibliographystyle{abbrvnat}
+\bibliography{../graphics}
 
 \end{document}
