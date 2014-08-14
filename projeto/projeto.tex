@@ -166,12 +166,30 @@ objeto e assim permitindo a renderização de sombras. Em superfícies refletiva
 na direção do reflexo, o qual é utilizado para calcular a luminosidade naquela direção, da mesma
 maneira que o raio inicial. Assim, este algoritmo implementa \emph{ray tracing recursivo}.
 
-\Citet{cook1984} aprimoraram o algoritmo de Whitted para que suporte uma variedade de efeitos
-adicionais como superfícies foscas e translúcidas, sombras com penumbras realísticas, \emph{depth of
-field} (foco) e \emph{motion blur}. Todos estes efeitos são realizados através do mesmo método de
-tirar várias amostras em cada ponto da imagem, introduzindo uma variação nas direções ou posições
-traçadas em cada amostra. Embora não tenha o embasamento matemático, esta é a mesma ideia básica
-utilizada posteriormente em algoritmos que utilizam integração Monte Carlo.
+\Citet{cook1984} aprimoraram o algoritmo de \citeauthor{whitted1980} para que suporte uma variedade
+de efeitos adicionais como superfícies foscas e translúcidas, sombras com penumbras realísticas,
+profundidade de campo e borrão de movimento. Todos estes efeitos são realizados através do mesmo
+método de tirar várias amostras em cada ponto da imagem, introduzindo uma variação nas direções ou
+posições traçadas em cada amostra. Embora não tenha o embasamento matemático, esta é a mesma ideia
+básica utilizada posteriormente em algoritmos que utilizam integração Monte Carlo.
+
+\Citet{kajiya1986} introduz a \emph{equação de renderização}, um importante formalismo teórico que
+descreve a interação da luz com as superfícies modelando também a reflexão de luz em superfícies
+completamente foscas (ver \autoref{fig:path_tracing}), e que é usado como base para o cálculo da
+imagem ou para o desenvolvimento de aproximações. No mesmo artigo é introduzida a técnica de
+\emph{path tracing}, que difere das anteriores desenvolvidas por \citeauthor{cook1984} e
+\citeauthor{whitted1980} por observar que os raios mais impactantes na aparência final da imagem são
+os de baixa profundidade, e assim traçando apenas um raio recursivo por amostra, evitando a explosão
+exponencial de raios presentes nas outras técnicas.
+
+Embora capaz de produzir imagens extremamente realísticas, \emph{path tracing} pode requerer uma
+quantidade impraticável de amostras para renderizar satisfatoriamente certos tipos de cenas onde não
+exista uma linha de visão direta entre as superfícies e as fontes de luz e em que a maioria da
+iluminação se dá através de caminhos indiretos, ou quando existem superfícies refratantes que
+projetem padrões de luz complicados em outras superfícies (conhecidos como \emph{caustics}). Para
+contornar estes problemas foram desenvolvidas inúmeras extensões ao algoritmo de path tracing, as
+mais famosas delas, \emph{bidirectional path tracing} e \emph{Metropolis light transport} ambas
+desenvolvidas por \citeauthor{veach1997} em sua dissertação de PhD\citep{veach1997}.
 
 \begin{figure}
 	\centering
@@ -180,8 +198,8 @@ utilizada posteriormente em algoritmos que utilizam integração Monte Carlo.
 		Um exemplo de uma imagem gerada utilizando \emph{path tracing}. Note como a luz que atinge o
 		plano xadrez é refletida de volta para iluminar a esfera, um fenômeno conhecido como
 		\emph{iluminação indireta} e que é corretamente simulado pelo algoritmo.
-		\todo{(referenciar)}
 	}
+	\label{fig:path_tracing}
 \end{figure}
 
 \subsection{Rust}
