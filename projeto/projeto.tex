@@ -183,11 +183,12 @@ crescimento exponencial do número de raios traçados que ocorre com as outras t
 Embora capaz de produzir imagens extremamente realísticas, \emph{path tracing} pode requerer uma
 quantidade impraticável de amostras para renderizar satisfatoriamente certos tipos de cenas onde não
 exista uma linha de visão direta entre as superfícies e as fontes de luz. Nestas cenas a maioria da
-iluminação se dá através de caminhos indiretos ou através de superfícies refratantes que
-projetem padrões de luz complicados em outras superfícies (conhecidos como \emph{caustics}). Para
-contornar estes problemas foram desenvolvidas inúmeras extensões ao algoritmo de path tracing, as
-mais famosas delas, \emph{bidirectional path tracing} e \emph{Metropolis light transport} ambas
-desenvolvidas por \citet{veach1997}.
+iluminação se dá através de caminhos indiretos ou através de superfícies refratantes que projetem
+padrões de luz complicados em outras superfícies (conhecidos como \emph{caustics}). Para contornar
+estes problemas foram desenvolvidas inúmeras extensões ao algoritmo de path tracing. Dentre elas se
+destaca \emph{bidirectional path tracing}, introduzido por \citet{lafortune1993}. Este algoritmo foi
+depois reformulado por \citeauthor{veach1997} em \citep{veach1997}, onde também introduz a técnica
+de \emph{multiple importance sampling} e o algoritmo \emph{Metropolis light transport}.
 
 \begin{figure}
 	\centering
