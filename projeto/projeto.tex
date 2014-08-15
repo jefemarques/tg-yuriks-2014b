@@ -203,7 +203,36 @@ de \emph{multiple importance sampling} e o algoritmo \emph{Metropolis light tran
 
 \subsection{Rust}
 
-\todo{TODO}
+Rust\citep{rust} é uma linguagem de programação de propósito geral, oficialmente patrocinada pela
+\emph{Mozilla Research} mas desenvolvida também pela comunidade. É uma linguagem de propósito geral,
+que busca atender as necessidades de programadores que atualmente utilizariam linguagens como C ou
+\Cpp, por questões de performance ou de controle sobre o hardware. Uma de suas características mais
+distintivas é o modelo de referências que utiliza, baseado em regiões\citep{tofte1997}, que
+automaticamente gerencia a vida de alocações de memória, evitando com que sejam feitos erros neste
+gerenciamento, ou que memória inválida seja acessada pelo programa, sem necessitar o uso de um
+\emph{garbage collector}. A linguagem foi originalmente desenvolvida para servir como linguagem de
+implementação do projeto Servo\citep{servo}, um browser experimental de próxima geração também
+desenvolvido pela Mozilla Research, mas atualmente já cresceu além deste objetivo para se tornar um
+projeto maior.
+
+Além de melhoras no gerenciamento de memória, a linguagem busca também trazer funcionalidades
+tradicionalmente oferecidas em linguagens funcionais, trazendo uma forte inspiração de linguagens
+como ML\citep{milner1997}. Assim, possui funcionalidades como \emph{pattern matching}, tuplas,
+\emph{sum types} (também conhecidos como \emph{Algebraic Data Types} (ADTs) ou \emph{uniões
+discriminadas}.) A linguagem não implementa o modelo tradicional de programação orientada a objetos,
+oferecendo em troca o conceito de \emph{traits} (similares ao conceito de \emph{type classes} em
+Haskell ou de \emph{interfaces} em outras linguagens) que evita alguns problemas do modelo baseado
+em herança de classes, como a falta de extensibilidade de tipos e o \emph{problema diamante} em
+herança múltipla\citep{scharli2003}.
+
+O compilador oficial da linguagem, o \emph{rustc}, é implementado na própria linguagem e utiliza a
+infraestrutura do projeto LLVM\citep{lattner2004}, permitindo que usufrua das capacidades de
+otimização e geração de código do projeto para alcançar uma variedade de plataformas. O compilador
+também tem suporte ao carregamento de \emph{plugins} durante o processo de análise, o que expõe
+poderosas capacidades de meta-programação aos usuários. Alguns exemplos de projetos que utilizam
+estas capacidades são o RustGPU\citep{holk2013}, que permite a compilação de código Rust para
+execução paralela GPUs, e Zinc\citep{zinc}, um \emph{framework} para desenvolvimento de aplicações
+embarcadas em microprocessadores.
 
 \section{Metodologia}
 
@@ -263,6 +292,6 @@ seja capaz de produzir imagens fotorrealistas, fazendo uso eficiente do paraleli
 hardware.
 
 \bibliographystyle{abbrvnat}
-\bibliography{../graphics}
+\bibliography{../graphics,../languages}
 
 \end{document}
