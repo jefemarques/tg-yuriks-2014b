@@ -44,7 +44,7 @@
 %%% END Article customizations
 
 \title{Exploração da Linguagem Rust para o Desenvolvimento de um \emph{Path Tracer} Paralelo}
-\author{Yuri Kunde Schlesner}
+\author{Yuri Kunde Schlesner \\ \emph{Universidade Federal de Santa Maria}}
 %\date{} % Activate to display a given date or no date (if empty), otherwise the current date is printed 
 
 \begin{document}
@@ -52,7 +52,7 @@
 
 \section{Identificação}
 
-\begin{description} \itemsep 0.25em
+\begin{description} \itemsep 0pt
 	\item[Resumo:] ~\\
 		A Computação Gráfica, e especificamente a geração de imagens por computador, é uma área com
 		inúmeras aplicações. No entanto, para a geração de imagens realísticas, é essencial fazer
@@ -72,20 +72,20 @@
 
 \section{Introdução}
 
-A \emph{Computação Gráfica} é a área da Ciência da Computação que estuda tópicos relacionados a
+A \emph{Computação Gráfica} é a área da Ciência da Computação que estuda tópicos relacionados à
 criação, análise e manipulação de imagens e conceitos relacionados. Dentre estas, a síntese (ou
 renderização) de imagens é onde uma imagem é criada de forma computacional, a partir de um modelo
 matemático e frequentemente buscando o fotorrealismo. Tem uma vasta quantidade de aplicações
 práticas: É usada na engenharia, durante o projeto de máquinas ou construções; na arquitetura, para
-a visualização de espaços; para entretenimento, em efeitos especiais de filmes ou em jogos 3D e em
-muitas outras aplicações.
+a visualização de espaços; para entretenimento, em efeitos especiais de filmes ou em jogos 3D e
+muitas outras.
 
 Como a geração de imagens fotorrealistas envolve essencialmente uma simulação completa da física da
 luz, um processo proibitivamente lento e complexo, são utilizadas simplificações e modelos. No
 passado, devido a limitada capacidade computacional disponível, eram utilizadas aproximações
 grosseiras que, embora produzissem imagens atrativas, não eram muito realísticas, especialmente no
-quesito da aparência das superfícies de suas interações com a luz. Com o aumento do poder
-computacional disponível, vem sendo usados modelos mais fiéis a realidade e que produzem imagens
+quesito da aparência das superfícies e de suas interações com a luz. Com o aumento do poder
+computacional disponível, vem sendo usados modelos mais fiéis à realidade e que produzem imagens
 mais convincentes, algumas vezes indistinguíveis de uma fotografia real.
 
 \emph{Path tracing} é um método de renderização que assume que a luz se comporta como uma partícula
@@ -95,9 +95,9 @@ imagens com um grau de realismo extremamente alto, devido a sua habilidade de si
 comportamento da luz com relativa precisão.
 
 No entanto, este realismo vem ao custo de muito poder de processamento, e mesmo com o avanço
-tecnológico de CPUs, a renderização de imagens continua sendo uma das tarefas mais árduas para
-processadores. Sistemas de renderização profissionais são quase exclusivamente escritos em \Cpp, e
-não em linguagens de mais alto nível, devido as penalidades de performance que impõem. Sistemas mais
+tecnológico de CPUs, a renderização de imagens continua sendo uma tarefa árdua para processadores.
+Sistemas de renderização profissionais são quase exclusivamente escritos em \Cpp\ e não em
+linguagens de mais alto nível, devido as penalidades de performance que impõem. Sistemas mais
 recentes chegam a fazer o uso de GPUs para acelerar a imensa quantidade de cálculos necessária.
 Tendo em vista a baixa expressividade de \Cpp\ comparada a estas outras linguagens, torna-se
 interessante explorar alternativas que permitam mais fácil desenvolvimento mas sem sacrificar a
@@ -190,8 +190,8 @@ crescimento exponencial do número de raios traçados que ocorre com as outras t
 Embora capaz de produzir imagens extremamente realísticas, \emph{path tracing} pode requerer uma
 quantidade impraticável de amostras para renderizar satisfatoriamente certos tipos de cenas onde não
 exista uma linha de visão direta entre as superfícies e as fontes de luz. Nestas cenas a maioria da
-iluminação se dá através de caminhos indiretos ou através de superfícies refratantes que projetem
-padrões de luz complicados em outras superfícies (conhecidos como \emph{caustics}). Para contornar
+iluminação se dá através de caminhos indiretos ou através de superfícies refratantes que projetam
+padrões de luz complicados em outras superfícies (conhecidos como \emph{caustics}.) Para contornar
 estes problemas foram desenvolvidas inúmeras extensões ao algoritmo de \emph{path tracing}. Dentre
 elas se destaca \emph{bidirectional path tracing}, introduzido por \citet{lafortune1993}. Este
 algoritmo foi depois reformulado por \citeauthor{veach1997} em \citep{veach1997}, onde também
@@ -239,8 +239,8 @@ otimização e geração de código do projeto para alcançar uma variedade de p
 também tem suporte ao carregamento de \emph{plugins} durante o processo de análise, o que expõe
 poderosas capacidades de meta-programação aos usuários. Alguns exemplos de projetos que utilizam
 estas capacidades são o RustGPU\citep{holk2013}, que permite a compilação de código Rust para
-execução paralela GPUs, e Zinc\citep{zinc}, um \emph{framework} para desenvolvimento de aplicações
-embarcadas em microprocessadores.
+execução paralela em GPUs, e Zinc\citep{zinc}, um \emph{framework} para desenvolvimento de
+aplicações embarcadas em microprocessadores.
 
 \section{Metodologia}
 
