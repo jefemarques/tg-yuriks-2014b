@@ -68,17 +68,17 @@ A \emph{Computação Gráfica} é a área da Ciência da Computação que estuda
 criação, análise e manipulação de imagens e conceitos relacionados. Dentre estas, a síntese (ou
 renderização) de imagens é onde uma imagem é criada de forma computacional, a partir de um modelo
 matemático e frequentemente buscando o fotorrealismo. Tem uma vasta quantidade de aplicações
-práticas: É usada na engenharia, durante o projeto de máquinas ou construções; na arquitetura para a
-visualização de espaços antes que sejam construídos; para entretenimento, em efeitos especiais de
+práticas: É usada na engenharia, durante o projeto de máquinas ou construções; na arquitetura, para a
+visualização de espaços; para entretenimento, em efeitos especiais de
 filmes ou em jogos 3D e em muitas outras aplicações.
 
 Como a geração de imagens fotorrealistas envolve essencialmente uma simulação completa da física da
 luz, um processo proibitivamente lento e complexo, são utilizadas simplificações e modelos. No
 passado, devido a limitada capacidade computacional disponível, eram utilizadas aproximações
-grosseiras que, enquanto produziam imagens atrativas, não eram muito realísticas, especialmente no
+grosseiras que, embora produzissem imagens atrativas, não eram muito realísticas, especialmente no
 quesito da aparência das superfícies de suas interações com a luz. Com o aumento do poder
-computacional disponível, vem sendo usados modelos cada vez mais fiéis a realidade e que produzem
-imagens cada vez mais convincentes, algumas vezes indistinguíveis de uma fotografia real.
+computacional disponível, vem sendo usados modelos mais fiéis a realidade e que produzem
+imagens mais convincentes, algumas vezes indistinguíveis de uma fotografia real.
 
 \emph{Path tracing} é um método de renderização que assume que a luz se comporta como uma partícula
 e calcula uma imagem traçando uma série de raios pelos caminhos através quais a luz viajaria quando
@@ -89,10 +89,10 @@ da luz com relativa precisão.
 No entanto, este realismo vem ao custo de muito poder de processamento, e mesmo com o avanço
 tecnológico de CPUs, a renderização de imagens continua sendo uma das tarefas mais árduas para
 processadores. Sistemas de renderização profissionais são quase exclusivamente escritos em \Cpp, e
-não em linguagens de mais alto nível, devido as penalidades de performance que impõem, e sistemas
+não em linguagens de mais alto nível, devido as penalidades de performance que impõem. Sistemas
 mais recentes chegam a fazer o uso de GPUs para acelerar a imensa quantidade de cálculos necessária.
 Tendo em vista a baixa expressividade de \Cpp\ comparada a estas outras linguagens, torna-se
-interessante explorar alternativas que permitam mais fácil desenvolvimento, mas sem sacrificar a
+interessante explorar alternativas que permitam mais fácil desenvolvimento mas sem sacrificar a
 performance requerida.
 
 A linguagem de programação \emph{Rust}, um projeto de pesquisa da \emph{Mozilla Research}, tem como
@@ -100,8 +100,8 @@ seu objetivo ser uma união entre linguagens de programação de sistemas e as t
 de alto-nível'', focando simultaneamente em alta-performance, segurança e expressividade. Ela atinge
 isso usando um modelo tradicional de compilação prévia (\emph{ahead of time}) e um sistema de tipos
 que permite a verificação automática dos usos de ponteiros durante a compilação, eliminando a
-possibilidade de acontecerem erros de memória, mas sem introduzir penalidades excessivas de
-performance ou consumo de memória, ao mesmo tempo que integra conceitos mais recentes de linguagens
+possibilidade de acontecerem erros de memória sem introduzir penalidades excessivas de
+performance ou consumo de memória. Ao mesmo tempo, integra conceitos mais recentes de linguagens
 de programação que aumentam sua expressividade e capacidade de facilmente descrever programas
 complexos.
 
@@ -148,14 +148,12 @@ Todos os algoritmos desta família se baseiam na ideia fundamental de simular o 
 traçando raios que saem da câmera virtual em direção a cena. Isto é o contrário do que ocorre na
 vida real, onde a luz é emitida de uma fonte e viaja pelo espaço até chegar ao observador, mas não
 afeta negativamente o resultado final e torna o algoritmo computacionalmente viável, pois assegura
-que todo o raio traçado é um que eventualmente chegaria no observador. (Intuitivamente, a maioria da
-luz numa cena não chega até o observador, que subtende um espaço relativamente pequeno da
-cena.)\citep{pharr2010}
+que todo o raio traçado é um que eventualmente chegaria no observador. (A maioria da
+luz numa cena não chega até o observador, que subtende um espaço relativamente pequeno nela.)\citep{pharr2010}
 
 Os primeiros algoritmos deste tipo a serem usados simplesmente traçavam um raio por pixel da imagem,
 encontrando a intersecção deste raio com a cena e calculando sua aparência de acordo com algum
-modelo básico de iluminação. Desta forma, não eram reproduzidas sombras, presentes quando um objeto
-se interpões entre o ponto sendo iluminado e a fonte de luz, nem superfícies refletivas, como
+modelo básico de iluminação. Desta forma, não eram reproduzidas sombras nem superfícies refletivas, como
 espelhos ou objetos metálicos. Estes tipo de algoritmos vieram a ser chamado de algoritmos de
 \emph{ray casting}.
 
@@ -173,23 +171,23 @@ método de tirar várias amostras em cada ponto da imagem, introduzindo uma vari
 posições traçadas em cada amostra. Embora não tenha o embasamento matemático, esta é a mesma ideia
 básica utilizada posteriormente em algoritmos que utilizam integração Monte Carlo.
 
-\Citet{kajiya1986} introduz a \emph{equação de renderização}, um importante formalismo teórico que
-descreve a interação da luz com as superfícies modelando também a reflexão de luz em superfícies
-completamente foscas (ver \autoref{fig:path_tracing}), e que é usado como base para o cálculo da
-imagem ou para o desenvolvimento de aproximações. No mesmo artigo é introduzida a técnica de
-\emph{path tracing}, que difere das anteriores desenvolvidas por \citeauthor{cook1984} e
+\Citet{kajiya1986} introduz a \emph{equação de renderização}, que descreve a interação da luz com as
+superfícies, modelando também a reflexão de luz em superfícies completamente foscas (ver
+\autoref{fig:path_tracing}.) Esta serve como uma importante fundação teórica que é usada como base
+para o cálculo da imagem ou para o desenvolvimento de aproximações. No mesmo artigo é introduzida a
+técnica de \emph{path tracing}, que difere das anteriores desenvolvidas por \citeauthor{cook1984} e
 \citeauthor{whitted1980} por observar que os raios mais impactantes na aparência final da imagem são
-os de baixa profundidade, e assim traçando apenas um raio recursivo por amostra, evitando a explosão
-exponencial de raios presentes nas outras técnicas.
+os de baixa profundidade, e assim traçando apenas um raio recursivo por amostra, evitando o
+crescimento exponencial do número de raios traçados que ocorre com as outras técnicas.
 
 Embora capaz de produzir imagens extremamente realísticas, \emph{path tracing} pode requerer uma
 quantidade impraticável de amostras para renderizar satisfatoriamente certos tipos de cenas onde não
-exista uma linha de visão direta entre as superfícies e as fontes de luz e em que a maioria da
-iluminação se dá através de caminhos indiretos, ou quando existem superfícies refratantes que
+exista uma linha de visão direta entre as superfícies e as fontes de luz. Nestas cenas a maioria da
+iluminação se dá através de caminhos indiretos ou através de superfícies refratantes que
 projetem padrões de luz complicados em outras superfícies (conhecidos como \emph{caustics}). Para
 contornar estes problemas foram desenvolvidas inúmeras extensões ao algoritmo de path tracing, as
 mais famosas delas, \emph{bidirectional path tracing} e \emph{Metropolis light transport} ambas
-desenvolvidas por \citeauthor{veach1997} em sua dissertação de PhD\citep{veach1997}.
+desenvolvidas por \citet{veach1997}.
 
 \begin{figure}
 	\centering
