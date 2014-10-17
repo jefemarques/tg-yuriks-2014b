@@ -1,5 +1,9 @@
 % !TEX TS-program = pdfLaTeX+MakeIndex+BibTeX
 % !TEX encoding = UTF-8 Unicode
+
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{naturalnames}{hyperref}
+
 \documentclass[tg]{mdtufsm}
 
 \usepackage[T1]{fontenc}
@@ -8,7 +12,15 @@
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
 \usepackage{amsmath,latexsym,amssymb}
-\usepackage[hidelinks]{hyperref}
+%\usepackage[hidelinks]{hyperref}
+\usepackage[hidelinks,
+            bookmarksopen=true,linktoc=none,colorlinks=true,
+            linkcolor=black,citecolor=black,filecolor=magenta,urlcolor=blue,
+            pdftitle={Exploração da Linguagem Rust para o Desenvolvimento de um Path Tracer Paralelo},
+            pdfauthor={Yuri Kunde Schlesner},
+            pdfsubject={Trabalho de Graduação},
+            pdfkeywords={Computação Gráfica, Linguagens de Programação, Programação Paralela, Rust, Path Tracing, Informática, UFSM}
+            ]{hyperref}
 %\usepackage[brazilian]{babel}
 
 %\usepackage{fontspec}
@@ -21,8 +33,6 @@
 % \geometry{margin=2in} % for example, change the margins to 2 inches all round
 % \geometry{landscape} % set up the page for landscape
 
-\usepackage{graphicx} % support the \includegraphics command and options
-
 % \usepackage[parfill]{parskip} % Activate to begin paragraphs with an empty line rather than an indent
 
 %%% PACKAGES
@@ -32,11 +42,33 @@
 %\usepackage{array} % for better arrays (eg matrices) in maths
 %\usepackage{paralist} % very flexible & customisable lists (eg. enumerate/itemize, etc.)
 \usepackage{verbatim} % adds environment for commenting out blocks of text & for better verbatim
+\usepackage{listings}
+\usepackage{parcolumns}
 %\usepackage{microtype}
 %\usepackage[numbers]{natbib}
 %\usepackage{subfig} % make it possible to include more than one captioned figure/table in a single float
 % These packages are all incorporated in the memoir class to one degree or another...
 
+\lstset{
+	basicstyle=\scriptsize\ttfamily,
+	tabsize=2,
+	frame=single,
+	breaklines=true,
+	breakatwhitespace=true,
+	xleftmargin=0cm,
+	xrightmargin=0cm,
+	literate=
+		{á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+		{Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+		{à}{{\`a}}1 {è}{{\`e}}1 {ì}{{\`i}}1 {ò}{{\`o}}1 {ù}{{\`u}}1
+		{À}{{\`A}}1 {È}{{\'E}}1 {Ì}{{\`I}}1 {Ò}{{\`O}}1 {Ù}{{\`U}}1
+		{ä}{{\"a}}1 {ë}{{\"e}}1 {ï}{{\"i}}1 {ö}{{\"o}}1 {ü}{{\"u}}1
+		{Ä}{{\"A}}1 {Ë}{{\"E}}1 {Ï}{{\"I}}1 {Ö}{{\"O}}1 {Ü}{{\"U}}1
+		{â}{{\^a}}1 {ê}{{\^e}}1 {î}{{\^i}}1 {ô}{{\^o}}1 {û}{{\^u}}1
+		{Â}{{\^A}}1 {Ê}{{\^E}}1 {Î}{{\^I}}1 {Ô}{{\^O}}1 {Û}{{\^U}}1
+		{ã}{{\~a}}1 {Ã}{{\~A}}1
+		{ç}{{\c c}}1 {Ç}{{\c C}}1
+}
 
 % For Computer Modern:
 %\def\Cpp{{C\nolinebreak[4]\hspace{-.05em}\raisebox{.4ex}{\tiny\bf ++}}}
@@ -88,7 +120,7 @@ trabalho tem como objetivo re-implementar um renderizador fotorrealista utilizan
 afim de avaliar se a linguagem realmente atende as necessidades deste tipo de aplicação.
 \end{abstract}
 
-%\tableofcontents
+\tableofcontents
 
 \setlength{\baselineskip}{1.5\baselineskip}
 
@@ -144,7 +176,7 @@ que aumentam sua expressividade e capacidade de facilmente descrever programas c
 
 \subsection{Objetivo Geral}
 
-O objetivo geral deste trabalho é portar um \emph{path tracer} para Rust e, através deste processo,
+O objetivo geral deste trabalho é portar um \emph{path tracer} para \emph{Rust} e, através deste processo,
 realizar uma comparação qualitativa e quantitativa entre esta linguagem e \Cpp, nos aspectos de
 performance e organização de código. Como base será utilizado o SmallVCM\citep{smallvcm}, um
 \emph{path tracer} de propósito educativo escrito em \Cpp, escolhido por implementar uma variedade
@@ -274,7 +306,7 @@ transport}.
 
 \chapter{Desenvolvimento}
 
-Aqui serão descritas as atividades realizadas para atingir os objetivos propostos. Será dada uma explicação da organização do ambiente de compilação e desenvolvimento utilizadas nas versões do \emph{SmallVCM}. (A original e a re-escrita em \emph{Rust}.) Seguindo, será feita uma descrição da organização de código do SmallVCM, e de como a implementação de seus componentes mudou no código \emph{Rust} por influência de diferenças entre essa linguagem e \Cpp.
+Aqui serão descritas as atividades realizadas para atingir os objetivos propostos. Será dada uma explicação da organização do ambiente de compilação e desenvolvimento utilizadas nas versões do \emph{SmallVCM}. (A original e a re-escrita em \emph{Rust}, denominada \emph{SmallVCM-rs}.) Seguindo, será feita uma descrição da organização de código do \emph{SmallVCM}, e de como a implementação de seus componentes mudou no código \emph{Rust} por influência de diferenças entre essa linguagem e \Cpp.
 
 \section{Ambiente de Desenvolvimento e Organização de Projeto}
 
@@ -289,6 +321,211 @@ Além do compilador, também é utilizado o gerenciador de pacotes oficial \emph
 Seguindo sua estrutura recomendada de projeto, é possível utilizar o \emph{Cargo} para gerenciar a compilação, com o comando \texttt{cargo build}, evitando a necessidade de um \emph{Makefile}. Além das tarefas básicas de um build system, o sistema também encarrega-se de automaticamente fazer o download e instalação de quaisquer bibliotecas externas utilizadas. Neste trabalho, no entanto, esta funcionalidade não é utilizado, pois não será feito o uso de nenhuma biblioteca.
 
 Para fazer uso da funcionalidade de compilação do \emph{Cargo}, é necessário colocar todo o código fonte dentro de um subdiretório \texttt{src/}. O ponto de partida do compilador para fazer a descoberta de todo o código fonte deve ser em um arquivo chamado \texttt{main.rs} (para projetos executáveis) ou \texttt{lib.rs} (para bibliotecas). Fora deste diretório, deve ser criado um arquivo \texttt{Cargo.toml}, que contém metadados sobre o projeto e bibliotecas utilizadas. Esta estrutura de projeto padronizada facilita a familiarização de programadores com outros projetos \emph{Rust}, já que não é necessário se adaptar a um sistema de compilação único a cada projeto.
+
+Para realizar o controle de mudanças foi utilizado o \emph{Git}\footnote{O repositório com o código pode ser encontrado em \url{https://github.com/yuriks/SmallVCM-rs}}, também utilizado pelo projeto original.
+
+\subsection{C++}
+
+O \emph{SmallVCM} original, sendo escrito em \Cpp\ precisa de um compilador para esta linguagem. No momento está sendo utilizado o \emph{gcc}. O processo de compilação do programa é bastante simples, bastando executar \texttt{make} para compilar o binário. Não foram necessárias nenhumas modificações a versão distribuída do código.
+
+No futuro planeja-se trocar para o compilador \emph{clang} que, assim como o \emph{rustc}, utiliza o \emph{LLVM} como \emph{back-end} de otimização e geração de código, afim de tornar as comparações com a versão escrita em \emph{Rust} mais diretas. Isto irá requerer algumas modificações ao fonte para permitir a compatibilidade com o outro compilador.
+
+\section{Organização do Código}
+
+Procurou-se manter a organização do código da versão re-escrita em \emph{Rust} similar à do original: Os arquivos mantém o mesmo nome, com a extensão \texttt{.cxx} ou \texttt{.hxx} substituída por \texttt{.rs}. Uma exceção é o arquivo \texttt{smallvcm.cxx}, que foi renomeado para \texttt{main.rs} de acordo com a organização padronizada descrita na seção anterior.
+
+Nesta seção será dado uma visão geral de como o código do \emph{SmallVCM-rs} é organizado, divido por arquivo fonte. Também serão ressaltadas mudanças relevantes que foram realizadas nele comparando-se com o \emph{SmallVCM}.
+
+\subsection{\texttt{config.rs}}
+
+Este arquivo lida com o gerenciamento da configuração do renderizador. Como o renderizador suporta apenas algumas cenas fixas, isto envolve principalmente a leitura de opções de configuração passadas na linha de comando. Ela é responsável por criar as instancias de \texttt{Scene}, \texttt{AbstractRenderer} e \texttt{Framebuffer} e retorna-las para serem usadas pelo resto do código.
+
+Neste módulo, uma diferença que afeta o código significantemente é a diferença nas implementações de \emph{enums} (tipos enumeráveis). Ao contrário de em \Cpp, onde são pouco mais que um conjunto de constantes simbólicas mapeadas a inteiros, \emph{enums} em \emph{Rust} não tem um valor inteiro correspondente a cada valor da enumeração. De fato, valores da enumeração podem ter outros itens de dados distintos associados, sendo mais similares a Tipos de Dados Algébricos presentes em \emph{Haskell} ou \emph{Standard ML}. Portanto, algumas técnicas utilizadas pelo código original, que iterava através dos possíveis valores numéricos das enumerações ou as utilizava como índice em um vetor, não são possíveis aqui. Estes usos são substituídos por usos da expressão \texttt{match}, mais repetitiva mas também mais clara. Uma comparação entre os dois tipos de código pode ser vista na figura \ref{code:enums}. Note como os testes para verificar se o valor está dentro do intervalo esperado não são necessários em Rust, pois a linguagem não permite a atribuição de valores não presentes na enumeração a variáveis desse tipo.
+
+\begin{figure}
+	\centering
+	\begin{minipage}[t]{0.48\textwidth}
+\begin{lstlisting}
+enum Algorithm {
+	kEyeLight,
+	kPathTracing,
+	kLightTracing,
+	kProgressivePhotonMapping,
+	kBidirectionalPhotonMapping,
+	kBidirectionalPathTracing,
+	kVertexConnectionMerging,
+	kAlgorithmMax
+};
+
+static const char* GetName(Algorithm aAlgorithm) {
+	static const char* algorithmNames[7] = {
+		"eye light",
+		"path tracing",
+		"light tracing",
+		"progressive photon mapping",
+		"bidirectional photon mapping",
+		"bidirectional path tracing",
+		"vertex connection and merging"
+	};
+
+	if(aAlgorithm < 0 || aAlgorithm > 7)
+		return "unknown algorithm";
+
+	return algorithmNames[aAlgorithm];
+}
+
+static const char* GetAcronym(Algorithm aAlgorithm) {
+	static const char* algorithmNames[7] = {
+		"el", "pt", "lt", "ppm", "bpm", "bpt", "vcm" };
+
+	if(aAlgorithm < 0 || aAlgorithm > 7)
+		return "unknown";
+	return algorithmNames[aAlgorithm];
+}
+\end{lstlisting}
+	\end{minipage}
+	~
+	\begin{minipage}[t]{0.48\textwidth}
+\begin{lstlisting}
+enum Algorithm {
+	EyeLight,
+	PathTracing,
+	LightTracing,
+	ProgressivePhotonMapping,
+	BidirectionalPhotonMapping,
+	BidirectionalPathTracing,
+	VertexConnectionMerging,
+}
+
+impl Algorithm {
+	fn get_name(self) -> &'static str {
+		match self {
+			EyeLight => "eye light",
+			PathTracing => "path tracing",
+			LightTracing => "light tracing",
+			ProgressivePhotonMapping => "progressive photon mapping",
+			BidirectionalPhotonMapping => "bidirectional photon mapping",
+			BidirectionalPathTracing => "bidirectional path tracing",
+			VertexConnectionMerging => "vertex connection and merging",
+		}
+	}
+
+	fn get_acronym(self) -> &'static str {
+		match self {
+			EyeLight => "el",
+			PathTracing => "pt",
+			LightTracing => "lt",
+			ProgressivePhotonMapping => "ppm",
+			BidirectionalPhotonMapping => "bpm",
+			BidirectionalPathTracing => "bpt",
+			VertexConnectionMerging => "vcm",
+		}
+	}
+}
+\end{lstlisting}
+	\end{minipage}
+	\caption{Comparação entre \emph{enums} em C++ e \emph{Rust}}
+	\label{code:enums}
+\end{figure}
+
+Para a leitura de parâmetros passado via linha de comando, é utilizada o módulo \texttt{getopts} presente na biblioteca padrão. Na versão \Cpp\ a leitura é feita de forma manual.
+
+\subsection{\texttt{framebuffer.rs}}
+
+Este arquivo contem a estrutura \texttt{Framebuffer}, que tem como objetivo armazenar as amostras geradas pela renderização, e depois combiná-las para exportar uma imagem.
+
+Uma mudança realizada aqui é a eliminação do construtor padrão da classe. \emph{Rust} não permite que membros de estruturas tenham valores não inicializados, portanto foi mantido apenas a função \texttt{setup}, que originalmente fazia a inicialização dos valores, e agora também cria a instância da estrutura.
+
+\subsection{\texttt{main.rs}}
+
+Este é o ponto de entrada principal do programa. Como este é o ponto de partida da compilação, todos os outros arquivo fonte precisam ser referenciados aqui utilizando declarações \texttt{mod}. O compilador então os lê e os inclui no processo de compilação.
+
+\subsection{\texttt{math.rs}}
+
+Aqui são definidas classes matemáticas, consistindo de vetores 2D e 3D, além de matrizes 4x4. Este arquivo sofreu várias modificações devido a funcionalidades de \Cpp\ que não estão presentes ou são diferentes em \emph{Rust}, particularmente sobrecarga de operadores, sobrecarga de funções e conversões automáticas.
+
+Em \emph{Rust} a sobrecarga de operadores é feita através da implementação de \emph{traits} especiais. No entanto, este é um procedimento muito mais verboso do que simplesmente declarar funções com um nome especial como é feito em \Cpp. Assim, para evitar uma grande quantidade de duplicação de código, é usada a funcionalidade de macros de \emph{Rust} para gerar as implementações dos operadores para Vec2 e Vec3 sem precisar repetir todas as definições. Parte da definição desta macro e sua correspondente expansão são mostradas na figura \ref{code:mathmacro}.
+
+\begin{figure}
+\begin{lstlisting}
+// Definição da macro
+macro_rules! impl_Vector_traits(
+	($Self:ident { $($field:ident),+ }) => (
+		impl<T: Num> Add<$Self<T>, $Self<T>> for $Self<T> {
+			#[inline]
+			fn add(&self, o: &$Self<T>) -> $Self<T> {
+				$Self {
+					$($field: self.$field + o.$field),+
+				}
+			}
+		}
+		// ...
+		impl<T: Num> Neg<$Self<T>> for $Self<T> {
+			#[inline]
+			fn neg(&self) -> $Self<T> {
+				$Self {
+					$($field: -self.$field),+
+				}
+			}
+		}		
+		// ...
+		impl<T: Num> Index<uint, T> for $Self<T> {
+			#[inline]
+			fn index(&self, index: &uint) -> &T {
+				[$(&self.$field),+][*index]
+			}
+		}
+	)
+)
+
+// Definição dos tipos
+#[deriving(Copy, Clone)]
+pub struct Vector2<T> { pub x: T, pub y: T }
+#[deriving(Copy, Clone)]
+struct Vector3<T> { pub x: T, pub y: T, pub z: T }
+
+// Instanciação da macro
+impl_Vector_traits!(Vector2 { x, y })
+impl_Vector_traits!(Vector3 { x, y, z })
+\end{lstlisting}
+\begin{lstlisting}
+// Expansão de impl_Vector_traits!(Vector2 { x, y })
+impl<T: Num> Add<Vector2<T>, Vector2<T>> for Vector2<T> {
+	#[inline]
+	fn add(&self, o: &Vector2<T>) -> Vector2<T> {
+		Vector2 {
+			x: self.x + o.x,
+			y: self.y + o.y
+		}
+	}
+}
+// ...
+impl<T: Num> Neg<Vector2<T>> for Vector2<T> {
+	#[inline]
+	fn neg(&self) -> Vector2<T> {
+		Vector2 {
+			x: -self.x,
+			y: -self.y
+		}
+	}
+}
+// ...
+impl<T: Num> Index<uint, T> for Vector2<T> {
+	#[inline]
+	fn index(&self, index: &uint) -> &T {
+		[self.x, self.y][*index]
+	}
+}
+\end{lstlisting}
+	\caption{Definição e uso de uma macro e sua expansão}
+	\label{code:mathmacro}
+\end{figure}
+
+Outras dificuldades são causadas pela falta de sobrecarga de funções\footnote{Suporte a \emph{despache múltiplo} em \emph{traits} é uma funcionalidade planejada que pode permitir algo equivalente no caso de sobrecarga de operadores. Ver \url{https://github.com/rust-lang/rfcs/pull/195}}, que requer que funções com nomes iguais sejam renomeadas para desambiguar-las. A falta de conversões automáticas é especialmente onerosa: No código original ela era usada para converter escalares para vetores automaticamente, permitindo a multiplicação vetor $\times$ escalar, além de vetor $\times$ vetor. Para contornar isso, foram criadas funções \texttt{vec2s} e \texttt{vec3s} que realizam essa conversão. No entanto, o código usuário precisa chama-las explicitamente.
+
+\subsection{\texttt{renderer.rs}}
+
+Este arquivo contém a classe base \texttt{AbstractRenderer}, que é a base que os vários algoritmos de renderização presentes no programa implementam. No caso do \emph{Rust}, esta classe é representada por um \emph{trait}. Como a classe original continha alguns campos de dados e \emph{Rust} não implementa herança de estruturas\footnote{Também espera-se que alguma forma de herança eventualmente seja incluída na linguagem, mas não há ainda propostas aceitas.}, estes são separados em uma estrutura \texttt{RendererBase}. Tipos que implementam \texttt{AbstractRenderer} devem conter umas instância desta estrutura e disponibiliza-la através de uma chamada no \emph{trait}.
 
 \chapter{Próximas Etapas}
 

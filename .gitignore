@@ -3,4 +3,5 @@
 *.out
 *.bbl
 *.blg
+*.toc
 *.synctex.gz
