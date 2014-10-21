@@ -1,0 +1,591 @@
+% !TEX TS-program = XeLaTeX
+% !TEX encoding = UTF-8 Unicode
+
+\documentclass{beamer}
+
+\mode<presentation>
+{
+  \usetheme{Dresden}
+
+  \setbeamercovered{transparent}
+  \useinnertheme{circles}
+  \usecolortheme{lsc}
+  \beamertemplatenavigationsymbolsempty
+}
+
+\setbeamertemplate{headline}{}
+\setbeamercovered{invisible}
+
+
+\usepackage[brazil]{babel}
+% or whatever
+
+%\usepackage[utf8]{inputenc}
+
+%\usefonttheme{serif}
+
+\usepackage[T1]{fontenc}
+\usepackage{fontspec}
+\setmainfont{Linux Libertine G}
+\setsansfont{Source Sans Pro}
+\setmonofont{Source Code Pro}
+
+\usepackage{textcomp}
+\usepackage{listings}
+
+\lstdefinelanguage{Rust}{
+  %keywords={typeof, new, true, false, catch, function, return, null, catch, switch, var, if, in, while, do, else, case, break},
+  keywords={struct, fn, let, box, mut, pub, impl, for, match, const},
+  %keywordstyle=\color{blue}\bfseries,
+  %ndkeywords={class, export, boolean, throw, implements, import, this},
+  %ndkeywords={Add, Num},
+  %ndkeywordstyle=\color{darkgray}\bfseries,
+  %identifierstyle=\color{black},
+  sensitive=true,
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  %commentstyle=\color{purple}\ttfamily,
+  stringstyle=\color[rgb]{0.0,0.4,0.65}\ttfamily,
+  %morestring=[b]',
+  morestring=[b]"
+}
+
+\lstdefinestyle{yuriks}{
+	basicstyle=\scriptsize\ttfamily,
+	commentstyle=\color[rgb]{0,0.5,0}\normalfont,
+}
+
+\lstset{
+	language=Rust,
+	style=yuriks,
+	frame=single,
+	texcl=true,
+	numbers=left,
+	showstringspaces=false,
+	}
+	
+\def\Cpp{{C\nolinebreak[4]\raisebox{.2ex}{\scriptsize\bf++}}}
+%\def\Cpp{{C\nolinebreak[4]\raisebox{.3ex}{\small++}}}
+
+\title{Exploração da Linguagem Rust para o Desenvolvimento de um \emph{Path Tracer} Paralelo}
+\author[Yuri Kunde Schlesner]{Yuri Kunde Schlesner\\Orientador: Profª Drª Andrea Scwertner Charão}
+\institute[UFSM]{Ciência da Computação\\Universidade Federal de Santa Maria}
+\date{20/10/2014}
+
+\pgfdeclareimage[height=0.75cm]{university-logo}{images/CienciaDaComputacao.png}
+\logo{\pgfuseimage{university-logo}}
+
+% Delete this, if you do not want the table of contents to pop up at
+% the beginning of each subsection:
+\AtBeginSubsection[]
+{
+  \begin{frame}<beamer>{Outline}
+    \tableofcontents[currentsection,currentsubsection]
+  \end{frame}
+}
+
+
+% If you wish to uncover everything in a step-wise fashion, uncomment
+% the following command: 
+
+%\beamerdefaultoverlayspecification{<+->}
+
+
+\begin{document}
+
+\begin{frame}
+	\titlepage
+	%\pgfuseimage{university-logo}
+\end{frame}
+
+\begin{frame}{Outline}
+  \tableofcontents
+\end{frame}
+
+\section{Introdução}
+\begin{frame}{Introdução}
+	\begin{itemize}
+		\item Ferramenta utilizada: Rust
+		\begin{itemize}
+			\item Princípios e público-alvo
+		\end{itemize}
+		\item Área de aplicação: Path Tracing
+		\begin{itemize}
+			\item Requisitos de processamento
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\pgfdeclareimage[height=4.0cm]{smallvcm-output}{images/ggbs_s_vcm.png}
+\subsection{Objetivos}
+\begin{frame}{Objetivos}
+	\begin{itemize}
+		\item Portar um renderizador \Cpp\ para Rust
+		\begin{itemize}
+			\item<2-> SmallVCM
+			\item<2-> Pequeno: $\sim$5000 linhas de código
+		\end{itemize}
+		\item<3-> Paralelização
+	\end{itemize}
+	\visible<2->{\begin{center}\pgfuseimage{smallvcm-output}\end{center}}
+\end{frame}
+
+\subsection{Justificativa}
+\begin{frame}{Justificativa}
+	\begin{itemize}
+		\item Rust quer substituir \Cpp
+		\item Desenvolvedores precisam de sugestões e casos de uso
+		\item Paralelismo é essencial para extrair performance
+	\end{itemize}
+\end{frame}
+
+\section{Fundamentação}
+\subsection{Rust}
+\begin{frame}{Rust}
+	\begin{itemize}
+		\item Sistema de Regiões
+		\begin{itemize}
+			\item Gerenciamento de memória sem \emph{garbage collection}.
+			\item \emph{Aliasing} e \emph{thread safety}.
+		\end{itemize}
+		\item \emph{Traits}.
+		\item Enums, tuplas e \emph{pattern matching}.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Regiões}
+	\begin{itemize}
+		\item Gerenciamento de memória sem \emph{garbage collection}
+	\end{itemize}
+	\begin{overprint}
+	\onslide<1>
+	\begin{lstlisting}
+struct Coisa;
+
+fn foobar() -> Coisa {
+    let a = Coisa; // Alocado na pilha
+    let b = box Coisa; // Alocado no heap
+    
+    let c = b; // Movido de b para c
+    
+    a // Move e retorna a
+    // Se última linha não termina com \texttt{;}, return é implicito
+} // c é liberado. a e b já tinham sido movidos
+	\end{lstlisting}
+
+	\onslide<2>
+	\begin{lstlisting}
+struct Coisa;
+
+fn foobar() -> Box<Coisa> {
+    let a = Coisa; // Alocado na pilha
+    let b = box Coisa; // Alocado no heap
+    
+    let c = b; // Movido de b para c
+    
+    b // Move e tenta retornar b
+}
+	\end{lstlisting}
+
+	\onslide<3>
+	\begin{lstlisting}[numbers=none, breaklines=true]
+<anon>:9:5: 9:6 error: use of moved value: `b`
+<anon>:9     b // Move e tenta retornar b
+             ^
+<anon>:7:9: 7:10 note: `b` moved here because it has type `Box<Coisa>`, which is moved by default (use `ref` to override)
+<anon>:7     let c = b; // Movido de b para c
+	\end{lstlisting}
+	\end{overprint}
+\end{frame}
+
+\begin{frame}[fragile]{Regiões}
+	\begin{itemize}
+		\item Previne uso não-sincronizado e invalidação de iteradores.
+	\end{itemize}
+	
+	\begin{overprint}
+	\onslide<1>
+	\begin{lstlisting}
+fn main() {
+    let mut n = 52u32;
+    
+    let a = &n;
+    let b = &n; // OK - Dois ponteiros somente-leitura
+    
+    println!("{} {}", *a, *b);
+}
+	\end{lstlisting}
+
+	\onslide<2>
+	\begin{lstlisting}
+fn main() {
+    let mut n = 52u32;
+    
+    let a = &n;
+    let b = &n; // OK - Dois ponteiros somente-leitura
+    
+    *a = 24; // ERRO - Não pode modificar ponteiro compartilhado
+    
+    println!("{} {}", *a, *b);
+}
+	\end{lstlisting}
+	\begin{lstlisting}[numbers=none, breaklines=true]
+<anon>:7:5: 7:12 error: cannot assign to immutable dereference of `&`-pointer `*a`
+<anon>:7     *a = 24;
+             ^~~~~~~
+	\end{lstlisting}
+	
+	\onslide<3>
+	\begin{lstlisting}
+fn main() {
+    let mut n = 52u32;
+    
+    let a = &mut n; // OK - Um ponteiro mutável
+
+    
+    *a = 24; // OK
+    
+    println!("{}", *a);
+}
+	\end{lstlisting}
+
+	\onslide<4>
+	\begin{lstlisting}
+fn main() {
+    let mut n = 52u32;
+    
+    let a = &mut n;
+    let b = &n; // ERRO - n já tem uma referência mutável
+    // ...
+}
+	\end{lstlisting}
+	\begin{lstlisting}[numbers=none, breaklines=true]
+<anon>:5:14: 5:15 error: cannot borrow `n` as immutable because it is also borrowed as mutable
+<anon>:5     let b = &n;
+                      ^
+<anon>:4:18: 4:19 note: previous borrow of `n` occurs here; the mutable borrow prevents subsequent moves, borrows, or modification of `n` until the borrow ends
+<anon>:4     let a = &mut n;
+                          ^
+	\end{lstlisting}
+	\end{overprint}
+\end{frame}
+
+\begin{frame}{Traits}
+	\begin{itemize}
+		\item Similar a \emph{interfaces} de Java, etc.
+		\begin{itemize}
+			\item Trait contém métodos, mas não campos.
+			\item Tipos que implementam um trait podem ser tratados polimórficamente (durante compilação \emph{`e} execução.)
+		\end{itemize}
+		\item Implementação do trait para o tipo é separado da definição do tipo.
+		\begin{itemize}
+			\item Novos tipos podem implementar traits existentes.
+			\item Novos traits podem vir com implementações para tipos existentes.
+			\item Métodos com mesmo nome em traits diferentes podem coexistir no mesmo tipo.
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+
+%\subsection{Path Tracing}
+%\begin{frame}{Ray Tracing}
+%\end{frame}
+
+\section{Desenvolvimento}
+\subsection{Implementação}
+\begin{frame}{Visão Geral}
+	\begin{itemize}
+		\item SmallVCM é dividido entre uma parte comum e algoritmos de renderização específicos que utilizam essa infraestrutura.
+		\item A \emph{port} mantém a mesma estrutura de arquivos, tipos e funções, na medida do possível, afim de facilitar comparações.
+%		\begin{itemize}
+%			\item \texttt{bsdf.hxx}, \texttt{materials.hxx} -- \emph{Shading} de superfície
+%			\item \texttt{camera.hxx} -- Câmera virtual
+%			\item \texttt{config.hxx} -- Configuração do renderizador e contexto de execução
+%			\item \texttt{frame.hxx}, \texttt{ray.hxx}, \texttt{math.hxx} -- Classes de geometria
+%			\item \texttt{framebuffer.hxx} -- Armazena resultados de imagem
+%			\item \texttt{geometry.hxx} -- Objetos de cena e testes de intersecção
+%			\item \texttt{hashgrid.hxx} -- ?
+%			\item \texttt{html\_writer.hxx}, \texttt{utils.hxx} -- Funções utilitárias
+%			\item \texttt{lights.hxx} -- Tipos de fontes de luz
+%			\item \texttt{renderer.hxx} -- Classe abstrata base dos algoritmos de renderização
+%			\item \texttt{rng.hxx} -- Gerador de números aleatórios
+%			\item \texttt{scene.hxx} -- Gerenciamento de objetos e teste de intersecção
+%		\end{itemize}
+		\item Alguns módulos tiveram que ser usar uma estratégia diferente para adaptá-los as funcionalidades e limitações de Rust.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Herança}
+	\begin{itemize}
+		\item Rust não tem herança de \emph{structs}.
+		\item Polimorfismo ainda pode ser realizado utilizando \emph{traits}, mas estes não contém dados, apenas métodos.
+		\item Requer divisão de classes base em partes, se estas também conterem campos de dados compartilhados.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Herança}
+	\begin{lstlisting}[language=C++]
+class AbstractRenderer {
+public:
+  AbstractRenderer(const Scene& aScene) {/*...*/}
+  virtual ~AbstractRenderer() {}
+  virtual void RunIteration(int aIteration) = 0;
+  void GetFramebuffer(Framebuffer& oFramebuffer) {/*...*/}
+  bool WasUsed() const {/*...*/}
+	
+  uint mMaxPathLength;
+  uint mMinPathLength;
+	
+protected:
+  int mIterations;
+  Framebuffer mFramebuffer;
+  const Scene& mScene;
+}
+	\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Herança}
+	\begin{lstlisting}
+pub trait AbstractRenderer {
+  fn get_base<'a>(&'a mut self) -> &mut RendererBase<'a>;
+  fn run_iteration(&mut self, iteration: u32);
+}
+
+pub struct RendererBase<'a> {
+  pub max_path_length: u32,
+  pub min_path_length: u32,
+
+  pub iterations: u32,
+  pub framebuffer: Framebuffer,
+  pub scene: &'a Scene,
+}
+
+impl<'a> RendererBase<'a> {
+  pub fn get_framebuffer(&mut self) -> Framebuffer {/*...*/}
+  pub fn was_used(&self) -> bool {/*...*/}
+}
+	\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Inicialização de Structs}
+	\begin{itemize}
+		\item Diferentemente de \Cpp, não são permitidos valores não inicializados (sejam variáveis ou campos.)
+		\item Alguns construtores unidos com métodos de inicialização:
+	\end{itemize}
+	\begin{lstlisting}[language=C++]
+class Framebuffer {
+public:
+  Framebuffer() {}
+
+  void Setup(const Vec2F& aResolution) {
+    mResolution = aResotluion;
+    mResX = int(aResolution.x);
+    mResY = int(aResolution.y);
+    mColor.resize(mResX * mResY);
+    Clear();
+  }
+  // ...
+};
+	\end{lstlisting}
+\end{frame}
+\begin{frame}[fragile]{Inicialização de Structs}
+	\begin{lstlisting}
+pub struct Framebuffer {
+  // ...
+}
+
+impl Framebuffer {
+  pub fn setup(resolution: Vec2f) -> Framebuffer {
+    let res_x = resolution.x as uint;
+    let res_y = resolution.y as uint;
+    
+    Framebuffer {
+      color: Vec::from_elem(res_x * res_y, vec3s(0.0)),
+      resolution: resolution,
+      res_x: res_x,
+      res_y: res_y,
+    }
+  }
+}
+	\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Sobrecarga de operadores}
+	\begin{itemize}
+		\item Sobrecarga de operadores é feita implementando-se \emph{traits} especiais.
+		\item \texttt{Add}, \texttt{Sub}, \texttt{Index}, etc.
+		\item Bastante verboso comparado com a sintaxe de \Cpp:
+		\begin{lstlisting}[language=C++]
+friend Vec2x<T> operator+(const Vec2x& a, const Vec2x& b) {
+  // ...
+}
+// ... x8 operadores, x2 tipos de vetor
+		\end{lstlisting}
+		\begin{lstlisting}
+impl<T: Num> Add<Vec2x<T>, Vec2x<T>> for Vec2x<T> {
+  #[inline]
+  fn add(&self, o: &Vec2x<T>) -> Vec2x<T> {
+    // ...
+  }
+}
+// ... x8 operadores, x2 tipos de vetor
+		\end{lstlisting}
+		\item Pode-se usar macros para diminuir a repetição.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Bitflags}
+	\begin{itemize}
+		\item Macro \texttt{bitflags!} permite definir flags e bitmasks de maneira \emph{type safe}.
+	\end{itemize}
+	\begin{lstlisting}
+bitflags! {
+  flags BoxMask: u32 {
+    const LIGHT_CEILING    = 1,
+    const LIGHT_SUN        = 2,
+    const LIGHT_POINT      = 4,
+    const LIGHT_BACKGROUND = 8,
+
+    const LARGE_MIRROR_SPHERE = 16,
+    const LARGE_GLASS_SPHERE  = 32,
+    const SMALL_MIRROR_SPHERE = 64,
+    const SMALL_GLASS_SPHERE  = 128,
+    const GLOSSY_FLOOR = 256,
+    // ...
+  }
+}
+	\end{lstlisting}
+\end{frame}
+\begin{frame}[fragile]{Bitflags}
+	\begin{itemize}
+		\item Infelizmente não podem ser usadas como expressões constantes.
+		\item Solução: Voltar a utilizar constantes de inteiros, ou usá-las em situações onde não são necessárias expressões constantes.
+	\end{itemize}
+	\begin{overprint}
+	\onslide<1>
+	\begin{lstlisting}[language=C++]
+uint g_SceneConfigs[] = {
+  Scene::kBothSmallSpheres  | Scene::kLightSun,
+  Scene::kLargeMirrorSphere | Scene::kLightCeiling,
+  Scene::kBothSmallSpheres  | Scene::kLightPoint,
+  Scene::kBothSmallSpheres  | Scene::kLightBackground
+};
+	\end{lstlisting}
+	\onslide<2>
+	\begin{lstlisting}
+fn get_scene_config(scene_id: uint) -> Option<BoxMask> {
+ match scene_id {
+  1 => Some(scene::BOTH_SMALL_SPHERES | scene::LIGHT_SUN),
+  2 => Some(scene::LARGE_MIRROR_SPHERE| scene::LIGHT_CEILING),
+  3 => Some(scene::BOTH_SMALL_SPHERES | scene::LIGHT_POINT),
+  4 => Some(scene::BOTH_SMALL_SPHERES | scene::LIGHT_BACKGROUND),
+  _ => None
+ }
+}
+	\end{lstlisting}
+	\end{overprint}
+\end{frame}
+
+\begin{frame}[fragile]{Enums}
+	\begin{itemize}
+		\item Enums não possuem valores inteiros (públicos) associados a elas.
+		\item Teste precisa ser feito utilizando \emph{pattern matching}.
+	\end{itemize}
+	\begin{overprint}
+	\onslide<1>
+	\begin{lstlisting}[language=C++]
+static const char* GetName(Algorithm aAlgorithm)
+{
+  static const char* algorithmNames[7] =
+  {
+    "eye light", "path tracing", "light tracing",
+    "progressive photon mapping",
+    "bidirectional photon mapping",
+    "bidirectional path tracing",
+    "vertex connection and merging"
+  };
+
+  if(aAlgorithm < 0 || aAlgorithm > 7)
+    return "unknown algorithm";
+
+  return algorithmNames[aAlgorithm];
+}
+	\end{lstlisting}
+	
+	\onslide<2>
+	\begin{lstlisting}
+fn get_name(self) -> &'static str {
+  match self {
+    EyeLight => "eye light",
+    PathTracing => "path tracing",
+    LightTracing => "light tracing",
+    ProgressivePhotonMapping => "progressive photon mapping",
+    BidirectionalPhotonMapping => "bidirectional photon mapping",
+    BidirectionalPathTracing => "bidirectional path tracing",
+    VertexConnectionMerging => "vertex connection and merging",
+  }
+}
+	\end{lstlisting}
+	\end{overprint}
+\end{frame}
+
+\section{Próximos Passos}
+\subsection{Terminar a port}
+\begin{frame}{Terminar a \emph{port}}
+	\begin{itemize}
+		\item O SmallVCM continuará sendo portado até um ponto em que esteja funcional e consiga gerar imagens similares ao original.
+		\begin{itemize}
+			\item Não é necessário portar todos os algoritmos de renderização.
+			\item Após a finalização do resto do trabalho, será portado o restante do código, se houver tempo disponível.
+		\end{itemize}
+		\item Serão feitas comparações de performance com o original, afim de identificar regressões de performance e suas causas.
+	\end{itemize}
+\end{frame}
+
+\subsection{Paralelização}
+\begin{frame}{Paralelização}
+	\begin{itemize}
+		\item Serão exploradas técnicas de paralelização e como podem ser integradas na versão Rust. Algumas das modalidades a se investigar são:
+		\begin{itemize}
+			\item Multi-threading
+			\item SIMD
+			\item GPU Computing
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Paralelização}
+	\begin{itemize}
+		\item Multi-threading
+		\begin{itemize}
+			\item Trabalho de renderização divisível em sub-regiões menores.
+			\item Investigar como o uso de OpenMP do código original pode ser mapeado para a biblioteca padrão de Rust.
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Paralelização}
+	\begin{itemize}
+		\item SIMD
+		\begin{itemize}
+			\item O \emph{rustc} tem suporte básico a SIMD: Existem tipos que representam um vetor de tamanho fixo, suportando operações aritméticas.
+			\item Não existe suporte a operações mais complexas de \emph{shuffling}, comparações ou \emph{masking}.
+			\item Investigar como pode ser usado no renderizador e se será necessário adicionar melhor suporte a estas operações no compilador ou biblioteca padrão.
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Paralelização}
+	\begin{itemize}
+		\item GPU Computing
+		\begin{itemize}
+			\item Existe um projeto \emph{proof of concept} que permite compilar código Rust para CUDA e executá-lo na GPU.
+			\item Seria necessário determinar se continua utilizável com novas versões do compilador e se parte do código do renderizador pode ser adaptado para ser acelerado desta maneira.
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\end{document}

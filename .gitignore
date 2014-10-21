@@ -5,3 +5,6 @@
 *.blg
 *.toc
 *.synctex.gz
+*.nav
+*.snm
+*.vrb
