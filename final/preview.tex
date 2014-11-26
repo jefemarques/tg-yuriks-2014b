@@ -66,7 +66,7 @@
 		{Ä}{{\"A}}1 {Ë}{{\"E}}1 {Ï}{{\"I}}1 {Ö}{{\"O}}1 {Ü}{{\"U}}1
 		{â}{{\^a}}1 {ê}{{\^e}}1 {î}{{\^i}}1 {ô}{{\^o}}1 {û}{{\^u}}1
 		{Â}{{\^A}}1 {Ê}{{\^E}}1 {Î}{{\^I}}1 {Ô}{{\^O}}1 {Û}{{\^U}}1
-		{ã}{{\~a}}1 {Ã}{{\~A}}1
+		{ã}{{\~a}}1 {Ã}{{\~A}}1 {õ}{{\~o}}1 {Õ}{{\~O}}1
 		{ç}{{\c c}}1 {Ç}{{\c C}}1
 }
 
@@ -240,6 +240,28 @@ estas capacidades são o RustGPU \citep{holk2013}, que permite a compilação de
 execução paralela em GPUs, e Zinc \citep{zinc}, um \emph{framework} para desenvolvimento de
 aplicações embarcadas em microprocessadores.
 
+\subsection{\emph{Lifetimes}}
+
+Para criar uma linguagem segura, eficiente e sem \emph{runtime}, é necessário assegurar-se que todas os ponteiros, ou referências, no programa sejam válidas quando são acessadas. Para que isto seja possível sem incidir um custo na execução, esta é uma tarefa que precisa ser feita durante a compilação do programa, e não durante sua execução, como é feito em muitas linguagens onde todos os acessos de ponteiro são testados por validez antes de serem executados.
+
+\emph{Rust} modela esta restrição fazendo uma análise dos objetos (Tipos básicos, estruturas, referências, etc.) que tem sua vida delimitada por escopos léxicos no programa. É permitido que uma variável seja usada em escopos dentro do qual ela foi definida, e quaisquer referências criadas a esta variável tem seu tipo associado ao escopo, de forma a proibir que estas escapem para um escopo superior (onde elas não seriam mais necessariamente válidas, pois a variável teria sido destruída no fim do seu respectivo escopo.) A região na qual uma variável é válida e referências a ela podem existir é chamada de sua \emph{lifetime}.
+
+Para suportar a mobilidade de valores para escopos mais externos, variáveis também podem ser movidas. Mover uma variável (para outra variável, para dentro de uma chamada de função ou retornando-a para fora de uma função) invalida a variável original que continha o objeto. O compilador proíbe acessos a esta variável após ela ter sido movida, pois seus conteúdos não são mais válidos. Por esta mesma razão, é proibido mover uma variável para a qual existam referências, que seriam invalidadas se isto acontecesse. Por isso, o ato de criar uma referência a partir de uma variável é chamado ``\emph{borrow}''. (``emprestar'') O direito de vida da variável é compartilhado com a referência, enquanto esta existir.
+
+A mesma limitação de mover para fora de uma variável emprestada também limita modificações à variável original. Isto evita uma classe de problemas causados pela modificação de um objeto enquanto existam referências à objetos contidos nele. Utilizando-se um vetor redimensionável, por exemplo, poderia ocorrer uma situação em que é criada uma referência a um elemento dentro do vetor. Se forem então permitidas modificações ao vetor, este poderia ser redimensionado de forma a invalidar a referência.
+
+Existem situações em que esta restrição de referências baseada no escopo léxico é limitada demais. Nestes casos é feito o uso de \emph{variáveis de lifetime}, que permitem que referências sejam retornadas de funções ou armazenadas em estruturas. Uma variável de \emph{lifetime} nomeada é adicionado a uma função, e pode ser usada para especificar que certas referências criadas dentro da função são válidas dentro de um escopo maior que a chamada, correspondendo invés a um escopo herdado da função que a chamou. \citep{rust-lifetimes}
+
+\todo{Exemplos}
+
+\subsection{Prevenção de \emph{Aliasing}}
+
+Para facilitar a análise do comportamento de um programa pelo usuário, \emph{Rust} também impõe restrições quanto a mutabilidade de referências a objetos. Referências \emph{únicas} ou \emph{mutáveis} permitem a modificação do objeto a que apontam, mas restringem qualquer acesso a ele sem ser pela referência enquanto estiver emprestado. Referências \emph{compartilhadas} ou \emph{imutáveis} restringem a modificação do objeto para a qual apontam, mas permitem a existência de várias delas apontando para o mesmo. Isto garante que, se uma função receber uma referência compartilhada, o objeto a qual ela aponta nunca sera modificado durante a duração da função, não precisando o programador ou o compilador preocupar-se com efeitos colaterais de operações em outros objetos. Da mesma forma, se uma função receber uma função única, poderá modificá-la sem se preocupar que isto irá interferir com outros objetos ou referências presentes dentro da função. \citep{rust-lifetimes}
+
+Esta garantia de que valores só podem ser modificados através de um único ponto por vez também automaticamente assegura que não existam erros de sincronização em programas concorrentes. Dados compartilhado por vários \emph{threads} o serão exclusivamente através de referências compartilhadas, com a garantia de que não serão modificados, e assim não precisam de exclusão mútua para evitar condições de corrida. Por outro lado, se um \emph{thread} possuir possuir uma referência única, sabe que este dado não pode ser lido em nenhum outro lugar, também evitando a necessidade de sincronismo.
+
+\todo{exemplos}
+
 \section{\emph{Path Tracing}}
 
 \emph{Path tracing} faz parte de uma família de algoritmos comumente denominados algoritmos de
@@ -311,35 +333,120 @@ Aqui são descritas as atividades realizadas para atingir os objetivos propostos
 
 \subsection{Rust}
 
-O compilador \emph{rustc}, além de ser oficialmente distribuído em forma de código fonte, também é disponibilizado através de pacotes binários distribuídos na página do projeto\footnote{\url{http://www.rust-lang.org/install.html}}. Estes pacotes evitam que usuários passem pelo processo de \emph{bootstrap} do compilador, que pode levar de uma à varias horas, dependendo do hardware em que é executado. Atualizados diariamente, os pacotes binários são providos para os sistemas operacionais Linux, Mac OS X e Windows, em versões 32-bits ou 64-bits. Ocasionalmente são também feitas versões numeradas do compilador, porém seu uso não é recomendado pois rapidamente ficam defasadas, um problema se pretende-se utilizar qualquer biblioteca de terceiros.
+O compilador \emph{rustc}, além de ser oficialmente distribuído em forma de código fonte, também é disponibilizado através de pacotes binários distribuídos na página do projeto\footnote{\url{http://www.rust-lang.org/install.html}}. Estes pacotes evitam que usuários passem pelo processo de \emph{bootstrap} do compilador, que pode levar mais de uma hora, dependendo do hardware em que é executado. Atualizados diariamente, os pacotes binários são providos para os sistemas operacionais Linux, Mac OS X e Windows, em versões 32-bits ou 64-bits. Ocasionalmente são também feitas versões numeradas do compilador, porém o uso destas não é recomendado pela comunidade pois rapidamente ficam defasadas, um problema se pretende-se utilizar qualquer biblioteca de terceiros ou consultar a documentação online.
 
 Para o desenvolvimento, foi utilizada uma máquina virtual contendo o sistema operacional \emph{Arch Linux}. Além de conter software atualizado, existem pacotes de terceiros para a distribuição que automaticamente instalam versões atualizadas do compilador de Rust.\footnote{\url{https://aur.archlinux.org/packages/rust-nightly-bin/}} Como a linguagem ainda está em fase de mudança frequente, poder atualizar o compilador facilmente é importante para se manter atualizado com as últimas mudanças e funcionalidades incluídas diariamente na linguagem.
 
-Além do compilador, também é utilizado o gerenciador de pacotes oficial \emph{Cargo}\footnote{\url{http://crates.io/}}, desenvolvido especificamente para gerenciar e compilar bibliotecas \emph{Rust}. Assim como o compilador, também existem pacotes \emph{Arch Linux} para manter este atualizado\footnote{\url{https://aur.archlinux.org/packages/cargo-nightly-bin/}}.
+Além do compilador, também é utilizado o gerenciador de pacotes oficial \emph{Cargo}\footnote{\url{http://crates.io/}}, \todo{falar mais sobre Cargo} desenvolvido especificamente para gerenciar e compilar bibliotecas \emph{Rust}. Assim como o compilador, também existem pacotes \emph{Arch Linux} para manter este atualizado\footnote{\url{https://aur.archlinux.org/packages/cargo-nightly-bin/}}.
 
-Seguindo sua estrutura recomendada de projeto, é possível utilizar o \emph{Cargo} para gerenciar a compilação, com o comando \texttt{cargo build}, evitando a necessidade de um \emph{Makefile}. Além das tarefas básicas de um build system, o sistema também encarrega-se de automaticamente fazer o download e instalação de quaisquer bibliotecas externas utilizadas. Neste trabalho, no entanto, esta funcionalidade não é utilizado, pois não será feito o uso de nenhuma biblioteca.
+Seguindo sua estrutura recomendada de projeto, é possível utilizar o \emph{Cargo} para gerenciar a compilação, com o comando \texttt{cargo build}, evitando a necessidade de um \emph{Makefile}. Para fazer uso desta funcionalidade, é necessário colocar todo o código fonte dentro de um subdiretório \texttt{src/}. O ponto de partida do compilador para fazer a descoberta de todo o código fonte deve ser em um arquivo chamado \texttt{main.rs} (para projetos executáveis) ou \texttt{lib.rs} (para bibliotecas). Fora deste diretório, deve ser criado um arquivo \texttt{Cargo.toml}, que contém metadados sobre o projeto e bibliotecas utilizadas. Esta estrutura de projeto padronizada facilita a familiarização de programadores com outros projetos \emph{Rust}, já que não é necessário se adaptar a um sistema de compilação único a cada projeto.
 
-Para fazer uso da funcionalidade de compilação do \emph{Cargo}, \todo{falar mais sobre Cargo} é necessário colocar todo o código fonte dentro de um subdiretório \texttt{src/}. O ponto de partida do compilador para fazer a descoberta de todo o código fonte deve ser em um arquivo chamado \texttt{main.rs} (para projetos executáveis) ou \texttt{lib.rs} (para bibliotecas). Fora deste diretório, deve ser criado um arquivo \texttt{Cargo.toml}, que contém metadados sobre o projeto e bibliotecas utilizadas. Esta estrutura de projeto padronizada facilita a familiarização de programadores com outros projetos \emph{Rust}, já que não é necessário se adaptar a um sistema de compilação único a cada projeto.
+Além das tarefas básicas de um sistema de compilação, o sistema também encarrega-se de automaticamente fazer o download e instalação de quaisquer bibliotecas externas utilizadas. Neste trabalho são utilizadas as bibliotecas \emph{time} (Biblioteca oficial para utilizar as funções de relógio do sistema operacional.) e \emph{rayon}. (Fornece uma primitiva simples para paralelização de tarefas.) Para inclusão de uma biblioteca externa, basta incluir a URL de um repositório \emph{Git} no arquivo \texttt{Cargo.toml}, e ela será automaticamente baixada e compilada antes da compilação do programa.
 
 Para realizar o controle de mudanças foi utilizado o \emph{Git}\footnote{O repositório com o código pode ser encontrado em \url{https://github.com/yuriks/SmallVCM-rs}}, também utilizado pelo projeto original.
 
 \subsection{C++}
 
-O \emph{SmallVCM} original, sendo escrito em \Cpp\ precisa de um compilador para esta linguagem. No momento está sendo utilizado o \emph{gcc}. O processo de compilação do programa é bastante simples, bastando executar \texttt{make} para compilar o binário. Não foram necessárias nenhumas modificações a versão distribuída do código.
+O \emph{SmallVCM} original, sendo escrito em \Cpp\ precisa de um compilador para esta linguagem. Inicialmente o sistema de compilação vem configurado para utilizar-se o compilador \emph{gcc}. O processo de compilação do programa é bastante simples, bastando executar \texttt{make} para compilar o binário. Não foram necessárias nenhumas modificações a versão distribuída do código.
 
-No futuro planeja-se trocar para o compilador \emph{clang} que, assim como o \emph{rustc}, utiliza o \emph{LLVM} como \emph{back-end} de otimização e geração de código, afim de tornar as comparações com a versão escrita em \emph{Rust} mais diretas. Isto irá requerer algumas modificações ao fonte para permitir a compatibilidade com o outro compilador.
+Foi feita uma tentativa de se utilizar o compilador \emph{clang}, que, assim como o \emph{rustc}, utiliza o \emph{LLVM} como \emph{back-end} de otimização e geração de código, a fim de tornar as comparações com a versão escrita em \emph{Rust} mais diretamente aplicáveis. Para isso, foi necessário remover o suporte a \emph{OpenMP} \todo{Cita e explicar openmp na rev. bib.} do programa, pois a tecnologia não é bem suportada pelo compilador. Esta modificação necessitou de poucas mudanças, bastando a remoção de algumas diretivas \texttt{\#include} e \texttt{\#pragma omp} e chamadas de inicialização do \emph{OpenMP}.\footnote{Esta versão pode ser encontrada em \url{https://github.com/yuriks/SmallVCM/tree/no-openmp}} Após estas modificações o programa pôde ser compilado e executado com sucesso, mas sua execução mostrou-se demorada, com o \emph{clang} gerando código menos eficiente que o \emph{gcc}. Como \emph{Rust}, assim como \emph{clang}, também utiliza o \emph{LLVM} para sua geração de código, eram esperados resultados similares, porém a versão compilada pelo \emph{clang} obteve performance muito abaixo das versões compiladas pelo \emph{gcc} e \emph{rustc}. Investigações realizadas com desenvolvedores do \emph{LLVM} em seu canal IRC indicaram que seria vantajoso tentar a última versão de desenvolvimento (\emph{Head of Tree}) do \emph{clang}, que havia recebido melhoras na geração de código em áreas relevantes ao programa. Fazendo uso da versão de desenvolvimento, constatou-se que ambos compiladores agora geravam código com desempenho similar.
 
-\section{Organização do Código}
+\section{Metodologia da \emph{Port}}
 
-Procurou-se manter a organização do código da versão re-escrita em \emph{Rust} similar à do original: Os arquivos mantém o mesmo nome, com a extensão \texttt{.cxx} ou \texttt{.hxx} substituída por \texttt{.rs}. Uma exceção é o arquivo \texttt{smallvcm.cxx}, que foi renomeado para \texttt{main.rs} de acordo com a organização padronizada descrita na seção anterior.
+Estabeleceu-se um objetivo inicial de converter para \emph{Rust} o conjunto de código necessário para renderizar uma imagem utilizando o algoritmo básico \emph{EyeLight}, que calcula apenas a incidência de luz direta de um fonte luminosa posicionada no observador, em modo \emph{single-threaded}. Isto possibilita que se tenha uma versão funcional para realizar testes de performance o mais cedo possível.
 
-Nesta seção será dado uma visão geral de como o código do \emph{SmallVCM-rs} é organizado, divido por arquivo fonte. Também serão ressaltadas mudanças relevantes que foram realizadas nele comparando-se com o \emph{SmallVCM}.
+Procurou-se manter a organização do código da versão re-escrita em \emph{Rust} similar à do original: Os arquivos mantém o mesmo nome mas com a extensão \texttt{.cxx} ou \texttt{.hxx} substituída por \texttt{.rs}. Uma exceção é o arquivo \texttt{smallvcm.cxx}, que foi renomeado para \texttt{main.rs} para seguir a organização padronizada descrita na seção anterior.
 
-\subsection{\texttt{config.rs}}
+\todo{Overview do código necessário para o objetivo.}
 
-Este arquivo lida com o gerenciamento da configuração do renderizador. Como o renderizador suporta apenas algumas cenas fixas, isto envolve principalmente a leitura de opções de configuração passadas na linha de comando. Ela é responsável por criar as instancias de \texttt{Scene}, \texttt{AbstractRenderer} e \texttt{Framebuffer} e retorna-las para serem usadas pelo resto do código.
+\section{Mudanças e Dificuldades}
 
-Neste módulo, uma diferença que afeta o código significantemente é a diferença nas implementações de \emph{enums} (tipos enumeráveis). Ao contrário de em \Cpp, onde são pouco mais que um conjunto de constantes simbólicas mapeadas a inteiros, \emph{enums} em \emph{Rust} não tem um valor inteiro correspondente a cada valor da enumeração. De fato, valores da enumeração podem ter outros itens de dados distintos associados, sendo mais similares a Tipos de Dados Algébricos presentes em \emph{Haskell} ou \emph{Standard ML}. Portanto, algumas técnicas utilizadas pelo código original, que iterava através dos possíveis valores numéricos das enumerações ou as utilizava como índice em um vetor, não são possíveis aqui. Estes usos são substituídos por usos da expressão \texttt{match}, mais repetitiva mas também mais clara. Uma comparação entre os dois tipos de código pode ser vista na figura \ref{code:enums}. Note como os testes para verificar se o valor está dentro do intervalo esperado não são necessários em Rust, pois a linguagem não permite a atribuição de valores não presentes na enumeração a variáveis desse tipo.
+Durante o processo de re-escrita foram encontradas diversas dificuldades provenientes da escolha da \emph{Rust} e de seu estado de desenvolvimento atual. Foram necessárias mudanças no paradigma de implementação de certos aspectos do programa para se adequar as convenções e funcionalidades da \emph{Rust}.
+
+\subsection{Herança}
+
+Um dos elementos de linguagem notoriamente ausentes de \emph{Rust} é o conceito de herança de tipos. As alternativas apresentadas para fazer re-uso de código e comportamentos polimórficos são o uso de composição e de \emph{traits}, respectivamente.
+
+No código do \emph{SmallVCM} existem alumas instâncias de hierarquias de herança de classe, todas seguindo o mesmo padrão: Uma classe base abstrata, as vezes contendo alguns campos de dados concretos, além de definições de funções virtuais que devem ser substituídas pelas classes que as implementam. Esse padrão é utilizado pelas hierarquias definindo algoritmos de compilação (base \texttt{AbstractRenderer}); formas geométricas (base \texttt{AbstractGeometry}) e tipos de fontes luminosas (base \texttt{AbstractLight}).
+
+Duas dessas hierarquias, de formas geométricas e de fontes luminosas, não possuem campos de dados na classe base e portanto podem ser diretamente convertidos para \emph{traits} a serem implementados por estruturas.
+
+Para realizar a conversão da hierarquia de \texttt{AbstractRenderer}, que possui campos de dados, para Rust, adotou-se a seguinte metodologia: Como a classe base contem campos de dados, é definida uma estrutura \texttt{RendererBase}, contendo estes campos compartilhados e quaisquer funções \emph{não-virtuais} da classe base. É também definido um \emph{trait} \texttt{AbstractRenderer} contendo apenas as declarações das funções \emph{virtuais} e também adicionando duas novas funções: \texttt{base} e \texttt{base\_mut}. O propósito destas duas funções é retornar uma referência ou uma referência única, respectivamente, para uma instância \texttt{RendererBase} contida dentro do objeto, assim permitindo que código no resto do programa consiga pegar uma referência para as funções e dados da ``classe base''. As classes que originalmente derivavam de \texttt{AbstractRenderer} no código \Cpp\ agora incluem um \texttt{RendererBase} como um de seus campos e implementam o \emph{trait} para extender a estrutura/\emph{trait} base. As duas implementações são demonstradas na \todo{LISTAGEM DE CÓDIGO}.
+
+O resultado desta conversão resulta num uso um tanto inconveniente do tipo, pois a base precisa ser explicitamente acessada quando se quer utilizar um campo, mas no geral não força nenhuma mudança arquitetural de grande porte neste caso.
+
+\subsection{Sobrecarga de Funções}
+
+Devido a falta de suporte a sobrecarga de funções, algumas funções tiveram que ser renomeadas durante o processo. No geral utilizou-se o mesmo nome da função original, com um sufixo indicando o tipo de parâmetro aceito pela função. Este ponto não gerou outras dificuldades.
+
+\subsection{Sobrecarga de Operadores e Conversões Automáticas}
+
+O módulo \texttt{math.rs} contém uma biblioteca de tipos matemáticos, consistindo de vetores 2D e 3D, além de matrizes 4x4. Este arquivo sofreu várias modificações comparado ao original devido ao seu frequente uso de sobrecarga de operadores, que diferem em sintaxe e implementação, e conversões automáticas, que não são suportadas em \emph{Rust}.
+
+Em \emph{Rust} a sobrecarga de operadores é feita através da implementação de \emph{traits} especiais. No entanto, este é um procedimento muito mais verboso do que simplesmente declarar funções com um nome especial como é feito em \Cpp. Assim, para evitar uma grande quantidade de duplicação de código, foi usada a funcionalidade de macros de \emph{Rust} para gerar as implementações dos operadores para \texttt{Vec2} e \texttt{Vec3} sem precisar repetir todas as definições. Parte da definição desta macro e sua correspondente expansão são mostradas na figura \ref{code:mathmacro}.
+
+\begin{figure}
+\begin{lstlisting}
+// Definição das macros
+macro_rules! impl_Vector_op(
+	($Trait:ident for $Self:ident { $($field:ident),+ }, $func:ident) => (
+		impl<T: Num> $Trait<$Self<T>, $Self<T>> for $Self<T> {
+			#[inline]
+			fn $func(&self, o: &$Self<T>) -> $Self<T> {
+				$Self {
+					$($field: self.$field.$func(&o.$field)),+
+				}
+			}
+		}
+	)
+)
+
+macro_rules! impl_Vector_traits(
+	($Self:ident { $($field:ident),+ }) => (
+		impl_Vector_op!(Add for $Self { $($field),+ }, add)
+		impl_Vector_op!(Sub for $Self { $($field),+ }, sub)
+		impl_Vector_op!(Mul for $Self { $($field),+ }, mul)
+		impl_Vector_op!(Div for $Self { $($field),+ }, div)
+
+		impl<T: Num> Neg<$Self<T>> for $Self<T> {
+			#[inline]
+			fn neg(&self) -> $Self<T> {
+				$Self {
+					$($field: -self.$field),+
+				}
+			}
+		}
+		// ...
+	)
+)
+
+// Definição dos tipos
+#[deriving(Copy, Clone)]
+pub struct Vector2<T> { pub x: T, pub y: T }
+#[deriving(Copy, Clone)]
+struct Vector3<T> { pub x: T, pub y: T, pub z: T }
+
+// Instanciação das implementações utilizando macros
+impl_Vector_traits!(Vector2 { x, y })
+impl_Vector_traits!(Vector3 { x, y, z })
+\end{lstlisting}
+	\caption{Definição e uso de uma macro e sua expansão}
+	\label{code:mathmacro}
+\end{figure}
+
+Outra dificuldade foi causada pela falta de conversões automáticas entre tipos. No código original ela era usada para converter escalares para vetores automaticamente, permitindo multiplicações vetor $\times$ escalar e vetor $\times$ vetor necessitando apenas de uma definição da operação de multiplicação. Para contornar isso, foram criadas funções \texttt{vec2s} e \texttt{vec3s} que realizam essa conversão. No entanto, o código usuário precisa chama-las explicitamente.
+
+Uma alternativa seria definir um \emph{trait} \texttt{FromVector}, que poderia ser implementado por tipos escalares e vetores, convertendo os escalares para um vetor, e simplesmente retornaria o próprio vetor caso chamado nele. Esta técnica é utilizada em alguns lugares na biblioteca padrão quando é necessário realizar conversão de uma variedade de tipos diferentes de forma automática.
+
+\subsection{Instabilidade}
+
+\emph{Rust} ainda está em um período de intenso desenvolvimento e por isso mudanças na definição da linguagem e na implementação do compilador ainda acontecem frequentemente. Foram encontradas várias situações onde uma atualização do compilador, buscando arrumar \emph{bugs} de compilação ou tomar proveito de funções novas da linguagem, necessitou a atualização do código para se adequar a revisões feitas na linguagem.
+
+\subsection{\emph{Enums}}
+
+O módulo de configuração (\texttt{config.rs}) faz uso de uma \emph{enum} para selecionar o algoritmo. Em \Cpp, valores de uma enumeração tem um respectivo valor inteiro associado. \emph{Rust} não associa valores inteiros correspondentes a cada valor da enumeração, pois valores podem ter outros itens de dados associados a eles, sendo análogos a Tipos de Dados Algébricos presentes em \emph{Haskell} ou \emph{Standard ML}.  Portanto, algumas técnicas utilizadas pelo código original, como iterar através dos possíveis valores numéricos das enumerações ou as utilizar como índice em um vetor, não são possíveis aqui. Estes usos são substituídos por usos da expressão \texttt{match}, que por requerer a menção dos nomes dos itens da enumeração é mais repetitiva, mas também mais clara. Uma comparação entre os dois tipos de código pode ser vista na figura \ref{code:enums}. Nota-se que os testes para verificar se o valor está dentro do intervalo esperado não são necessários em Rust, pois a linguagem não permite a atribuição de valores não presentes na enumeração a variáveis desse tipo.
+
+Esta funcionalidade também foi utilizada de maneira vantajosa, substituindo um par de variáveis de configuração que determinava a condição de parada do algoritmo, dos quais apenas uma poderia estar ativa de cada vez, por uma \emph{enum} de duas variantes, cada uma contendo seu respectivo parâmetro. Esta mudança evita que o sistema acidentalmente seja colocado em um estado inválido, e também remove ambiguidade na hora de testar pela condição.
 
 \begin{figure}
 	\centering
@@ -423,112 +530,26 @@ impl Algorithm {
 }
 \end{lstlisting}
 	\end{minipage}
+	\todo{sub-captions}
 	\caption{Comparação entre \emph{enums} em C++ e \emph{Rust}}
 	\label{code:enums}
 \end{figure}
 
-Para a leitura de parâmetros passado via linha de comando, é utilizada o módulo \texttt{getopts} presente na biblioteca padrão. Na versão \Cpp\ a leitura é feita de forma manual.
+\todo{Para a leitura de parâmetros passado via linha de comando, é utilizada o módulo \texttt{getopts} presente na biblioteca padrão. Na versão \Cpp\ a leitura é feita de forma manual.}
 
-\subsection{\texttt{framebuffer.rs}}
+\subsection{Ponteiros Nulos}
 
-Este arquivo contem a estrutura \texttt{Framebuffer}, que tem como objetivo armazenar as amostras geradas pela renderização, e depois combiná-las para exportar uma imagem.
+\emph{Rust} desestimula o uso de ponteiros, \todo{rev bib: restringindo seu uso a blocos especiais utilizados para a escrita de código baixo nível livre da checagem estática de segurança de memória.} Programadores devem geralmente substituí-los por referências, que não podem ser nulas e que também estão são verificadas em compilação para garantir que nunca se tornem inválidas, ou utilizar o tipo `Box<T>`, que representa uma alocação de memória pertencente a uma variável ou campo e que é gerenciada automaticamente para manter estas mesmas garantias.
 
-Uma mudança realizada aqui é a eliminação do construtor padrão da classe. \emph{Rust} não permite que membros de estruturas tenham valores não inicializados, portanto foi mantido apenas a função \texttt{setup}, que originalmente fazia a inicialização dos valores, e agora também cria a instância da estrutura.
+O código original inicializava alguns ponteiros para nulo. Em sua maioria estes caso foram simplesmente trocados para diretamente inicializar o ponteiro com seu valor final, agora com a garantia de que sempre terão um valor válido. Em um caso foi utilizado o tipo \texttt{Option<T>}, \todo{explicar option na rev. bib.} para permitir uma alocação opcional de um valor. Este uso também poderia ser eliminado com alguma re-estruturação do código.
 
-\subsection{\texttt{main.rs}}
+\subsection{Biblioteca padrão}
 
-Este é o ponto de entrada principal do programa. Como este é o ponto de partida da compilação, todos os outros arquivo fonte precisam ser referenciados aqui utilizando declarações \texttt{mod}. O compilador então os lê e os inclui no processo de compilação.
-
-\subsection{\texttt{math.rs}}
-
-Aqui são definidas classes matemáticas, consistindo de vetores 2D e 3D, além de matrizes 4x4. Este arquivo sofreu várias modificações devido a funcionalidades de \Cpp\ que não estão presentes ou são diferentes em \emph{Rust}, particularmente sobrecarga de operadores, sobrecarga de funções e conversões automáticas.
-
-Em \emph{Rust} a sobrecarga de operadores é feita através da implementação de \emph{traits} especiais. No entanto, este é um procedimento muito mais verboso do que simplesmente declarar funções com um nome especial como é feito em \Cpp. Assim, para evitar uma grande quantidade de duplicação de código, é usada a funcionalidade de macros de \emph{Rust} para gerar as implementações dos operadores para Vec2 e Vec3 sem precisar repetir todas as definições. Parte da definição desta macro e sua correspondente expansão são mostradas na figura \ref{code:mathmacro}.
-
-\begin{figure}
-\begin{lstlisting}
-// Definição da macro
-macro_rules! impl_Vector_traits(
-	($Self:ident { $($field:ident),+ }) => (
-		impl<T: Num> Add<$Self<T>, $Self<T>> for $Self<T> {
-			#[inline]
-			fn add(&self, o: &$Self<T>) -> $Self<T> {
-				$Self {
-					$($field: self.$field + o.$field),+
-				}
-			}
-		}
-		// ...
-		impl<T: Num> Neg<$Self<T>> for $Self<T> {
-			#[inline]
-			fn neg(&self) -> $Self<T> {
-				$Self {
-					$($field: -self.$field),+
-				}
-			}
-		}		
-		// ...
-		impl<T: Num> Index<uint, T> for $Self<T> {
-			#[inline]
-			fn index(&self, index: &uint) -> &T {
-				[$(&self.$field),+][*index]
-			}
-		}
-	)
-)
-
-// Definição dos tipos
-#[deriving(Copy, Clone)]
-pub struct Vector2<T> { pub x: T, pub y: T }
-#[deriving(Copy, Clone)]
-struct Vector3<T> { pub x: T, pub y: T, pub z: T }
-
-// Instanciação da macro
-impl_Vector_traits!(Vector2 { x, y })
-impl_Vector_traits!(Vector3 { x, y, z })
-\end{lstlisting}
-\begin{lstlisting}
-// Expansão de impl_Vector_traits!(Vector2 { x, y })
-impl<T: Num> Add<Vector2<T>, Vector2<T>> for Vector2<T> {
-	#[inline]
-	fn add(&self, o: &Vector2<T>) -> Vector2<T> {
-		Vector2 {
-			x: self.x + o.x,
-			y: self.y + o.y
-		}
-	}
-}
-// ...
-impl<T: Num> Neg<Vector2<T>> for Vector2<T> {
-	#[inline]
-	fn neg(&self) -> Vector2<T> {
-		Vector2 {
-			x: -self.x,
-			y: -self.y
-		}
-	}
-}
-// ...
-impl<T: Num> Index<uint, T> for Vector2<T> {
-	#[inline]
-	fn index(&self, index: &uint) -> &T {
-		[self.x, self.y][*index]
-	}
-}
-\end{lstlisting}
-	\caption{Definição e uso de uma macro e sua expansão}
-	\label{code:mathmacro}
-\end{figure}
-
-Outras dificuldades são causadas pela falta de sobrecarga de funções\footnote{Suporte a \emph{despache múltiplo} em \emph{traits} é uma funcionalidade planejada que pode permitir algo equivalente no caso de sobrecarga de operadores. Ver \url{https://github.com/rust-lang/rfcs/pull/195}}, que requer que funções com nomes iguais sejam renomeadas para desambiguar-las. A falta de conversões automáticas é especialmente onerosa: No código original ela era usada para converter escalares para vetores automaticamente, permitindo a multiplicação vetor $\times$ escalar, além de vetor $\times$ vetor. Para contornar isso, foram criadas funções \texttt{vec2s} e \texttt{vec3s} que realizam essa conversão. No entanto, o código usuário precisa chama-las explicitamente.
-
-\subsection{\texttt{renderer.rs}}
-
-Este arquivo contém a classe base \texttt{AbstractRenderer}, que é a base que os vários algoritmos de renderização presentes no programa implementam. No caso do \emph{Rust}, esta classe é representada por um \emph{trait}. Como a classe original continha alguns campos de dados e \emph{Rust} não implementa herança de estruturas\footnote{Também espera-se que alguma forma de herança eventualmente seja incluída na linguagem, mas não há ainda propostas aceitas.}, estes são separados em uma estrutura \texttt{RendererBase}. Tipos que implementam \texttt{AbstractRenderer} devem conter umas instância desta estrutura e disponibiliza-la através de uma chamada no \emph{trait}.
+\todo{TODO}
 
 \chapter{Próximas Etapas}
 
-Como continuação do trabalho realizado até o momento, são planejadas as seguintes atividades:
+\todo{Como continuação do trabalho realizado até o momento, são planejadas as seguintes atividades:}
 
 \begin{enumerate}
 	\item Continuar a re-escrita em andamento do SmallVCM, afim de que esta tenha funcionalidade o suficiente para gerar imagens usando pelo menos um tipo de algoritmo.
