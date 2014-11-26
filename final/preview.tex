@@ -76,6 +76,7 @@
 \def\Cpp{{C\nolinebreak[4]\raisebox{.20ex}{\small\bf++}}}
 
 \newcommand{\todo}[1]{\textsf{\color{red}#1}}
+\graphicspath{{./images/}}
 
 \input{macros/bugcaption}
 
@@ -262,6 +263,14 @@ Esta garantia de que valores só podem ser modificados através de um único pon
 
 \todo{exemplos}
 
+\subsection{\emph{Traits}}
+
+O projeto de \emph{Rust} considera importante o suporte a programação genérica sobre tipos polimór suporta o conceito de herança de classes. No entanto, ainda é essencial suportar o uso polimórfico de objetos. Este suporte é fornecido através do conceito de \emph{traits}. Um \emph{trait} é similar a uma \emph{interface}, conceito presente em várias linguagens orientadas a objeto\todo{[REF]?}: um tipo que consiste apenas de declarações de funções, sem campos de dados ou implementação, e que forma um contrato para a interação entre dois componentes do código. Estas funções devem ser posteriormente implementadas por um tipos concretos, de acordo com o contrato estabelecido, permitindo que estes tipos sejam usados de forma genérica através da interface. Um dado tipo pode implementar mais de uma interface, permitindo expor vários conjuntos de funcionalidade distintos. \todo {exemplo}
+
+Uma vantagem de \emph{traits} sobre o modelo de herança tradicional é que se evita a ambiguidade presente em casos onde duas superclasses em de um tipo herdam de um mesmo tipo compartilhado. Isto cria uma ambiguidade onde cada classe pode conter dentro de sí uma instância separada dos campos das classes pai ou onde ambas compartilham os mesmos campos. Esta situação é chamada de ``problema diamante'', devido a estrutura do grafo de herança resultante. Por esta razão, muitas linguagens restringem seu suporte à herança simples, permitindo que classes herdem de somente uma superclasse. \todo{diagrama}
+
+Outra vantagem é a possibilidade de se estender tipos através da definição posterior de um novo \emph{trait}. Como a implementação de um \emph{trait} para certo tipo é separada da definição do tipo em sí, pode-se fazer um tipo pré-existente suportar novas interfaces. \todo{exemplo junto com o 1o?}
+
 \section{\emph{Path Tracing}}
 
 \emph{Path tracing} faz parte de uma família de algoritmos comumente denominados algoritmos de
@@ -324,6 +333,29 @@ algoritmo foi depois reformulado em \citep{veach1997}, onde também foi introduz
 	}
 	\label{fig:path_tracing}
 \end{figure}
+
+\section{SmallVCM}
+
+\emph{SmallVCM} \citep{smallvcm} é um renderizador de imagens, baseado em algoritmos de \emph{ray tracing} e \emph{path tracing}, desenvolvido pelo autor para servir como uma implementação de exemplo de seu algoritmo \emph{Vertex Connection and Merging} \citep{georgiev2012}. Além deste algoritmo, o programa também implementa uma variedade de outros incluindo \emph{path tracing}, \emph{light tracing}, \emph{bidirectional path tracing} e \emph{photon mapping}. \todo{Ref. para photon mapping.} Por ter propósito de educar sobre os algoritmos, não possui funcionalidades avançadas como animação e é limitado a renderizar um pequeno conjunto de cenas de exemplo incluídas no programa. Uma imagem gerada com o programa, utilizando o algoritmo de \emph{vertex connection and merging}, pode ser vista na figura \ref{fig:smallvcm_img}. O programa também possui uma função que gera um relatório que compara a performance relativa de cada algoritmo.
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.5\textwidth]{ggbs_s_vcm}
+	\caption{
+		Uma imagem gerada pelo \emph{SmallVCM}.
+	}
+	\label{fig:smallvcm_img}
+\end{figure}
+
+Escrito em \Cpp, o \emph{SmallVCM} segue uma estrutura de projeto claramente organizada. A partir das opções passadas na linha de comando, é criada uma cena, utilizando um dos modelos disponíveis, e um renderizador, dos quais existem várias implementações para os vários algoritmos. Todos os renderizadores utilizam uma infra-estrutura de comum de tipos representando os objetos, fontes luminosas e materiais da cena. Os resultados intermediários da renderização são acumulados em um \texttt{Framebuffer} e subsequentemente salvos para um arquivo após um terem sido executadas um número especificado de iterações ou de certo tempo de execução.
+
+\todo{Diagrama das classes/módulos.}
+
+\subsection{Paralelização}
+
+Existe suporte à paralelização do processo de renderização. Este é implementado utilizando diretivas \emph{OpenMP} \citep{openmp40}, uma API multi-plataforma para computação paralela. A \emph{OpenMP} permite a paralelização de código através da inserção de diretivas \text{\#pragma omp} em programas \Cpp, que são reconhecidas pelo compilador (portando requerendo suporte específico por parte deste) e automaticamente transformadas em código paralelo. Assim, uma aplicação existente pode ser mais facilmente convertida para um programa paralelo, sem depender de APIs de algum SO específico e sem precisar de grandes re-estruturações do programa nos casos mais simples.
+
+No \emph{SmallVCM} a paralelização é efetuada construindo-se várias instâncias do renderizador, uma por \emph{thread}. Como cada iteração dos algoritmos de \emph{path tracing} é independente da outra, estas podem ser executadas em paralelo. Assim, pode-se atingir um determinado número de iterações em menos tempo, sem necessitar modificar os algoritmos em sí.
 
 \chapter{Desenvolvimento}
 
@@ -535,17 +567,17 @@ impl Algorithm {
 	\label{code:enums}
 \end{figure}
 
-\todo{Para a leitura de parâmetros passado via linha de comando, é utilizada o módulo \texttt{getopts} presente na biblioteca padrão. Na versão \Cpp\ a leitura é feita de forma manual.}
-
 \subsection{Ponteiros Nulos}
 
 \emph{Rust} desestimula o uso de ponteiros, \todo{rev bib: restringindo seu uso a blocos especiais utilizados para a escrita de código baixo nível livre da checagem estática de segurança de memória.} Programadores devem geralmente substituí-los por referências, que não podem ser nulas e que também estão são verificadas em compilação para garantir que nunca se tornem inválidas, ou utilizar o tipo `Box<T>`, que representa uma alocação de memória pertencente a uma variável ou campo e que é gerenciada automaticamente para manter estas mesmas garantias.
 
-O código original inicializava alguns ponteiros para nulo. Em sua maioria estes caso foram simplesmente trocados para diretamente inicializar o ponteiro com seu valor final, agora com a garantia de que sempre terão um valor válido. Em um caso foi utilizado o tipo \texttt{Option<T>}, \todo{explicar option na rev. bib.} para permitir uma alocação opcional de um valor. Este uso também poderia ser eliminado com alguma re-estruturação do código.
+O código original inicializava alguns ponteiros para nulo. Em sua maioria estes casos foram simplesmente adaptados para diretamente inicializar o ponteiro com seu valor final, agora com a garantia de que sempre terão um valor válido. Em um caso foi utilizado o tipo \texttt{Option<T>}, \todo{explicar option na rev. bib.} para permitir uma alocação opcional de um valor. Este uso também poderia ser eliminado com alguma re-estruturação do código.
 
 \subsection{Biblioteca padrão}
 
 \todo{TODO}
+
+\todo{Para a leitura de parâmetros passado via linha de comando, é utilizada o módulo \texttt{getopts} presente na biblioteca padrão. Na versão \Cpp\ a leitura é feita de forma manual.}
 
 \chapter{Próximas Etapas}
 
