@@ -575,9 +575,9 @@ O código original inicializava alguns ponteiros para nulo. Em sua maioria estes
 
 \subsection{Biblioteca padrão}
 
-\todo{TODO}
+É necessário de um gerador de números pseudo-aleatórios para o cálculo da integração por monte carlo. O \emph{SmallVCM} original utilizava o popular \emph{MT19937}, uma versão do algoritmo \emph{Mersenne Twister} \citep{matsumoto1998}, presente na biblioteca padrão \Cpp. Como este gerador não estava presente na biblioteca padrão da \emph{Rust}, foi optado implementar o algoritmo \emph{xorshift128+} \citep{vigna2014} devido a seu bom desempenho, boa qualidade de resultados e pequena implementação quando comparado ao \emph{Mersenne Twister}. O algoritmo também foi posteriormente implementado em \Cpp\ para que ambos possuíssem as mesmas características para fins de comparação.
 
-\todo{Para a leitura de parâmetros passado via linha de comando, é utilizada o módulo \texttt{getopts} presente na biblioteca padrão. Na versão \Cpp\ a leitura é feita de forma manual.}
+Para a leitura de parâmetros passado via linha de comando, foi utilizado o módulo \texttt{getopts}, presente na biblioteca padrão. Na versão \Cpp\ a leitura é feita de forma manual.
 
 \chapter{Próximas Etapas}
 
