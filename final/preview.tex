@@ -269,19 +269,55 @@ Para criar uma linguagem segura, eficiente e sem \emph{runtime}, é necessário 
 
 Rust modela esta restrição fazendo uma análise do fluxo de valores e referências na função, que tem sua vida delimitada por escopos léxicos no programa. É permitido que uma variável seja usada em escopos dentro do qual ela foi definida, e quaisquer referências criadas a esta variável tem seu tipo associado ao escopo, de forma a proibir que estas escapem para um escopo superior (onde elas não seriam mais necessariamente válidas, pois a variável teria sido destruída no fim do seu respectivo escopo.) A região na qual uma variável é válida e referências a ela podem existir é chamada de sua \emph{lifetime}.
 
-Para suportar a mobilidade de valores para escopos mais externos, variáveis também podem ser movidas. Mover uma variável (para outra variável, para dentro de uma chamada de função ou retornando-a para fora de uma função) invalida a variável original que continha o objeto. O compilador proíbe acessos a esta variável após ela ter sido movida, pois seus conteúdos não são mais válidos. Por esta mesma razão, é proibido mover uma variável para a qual existam referências, que seriam invalidadas se isto acontecesse. Por isso, o ato de criar uma referência a partir de uma variável é chamado \emph{borrow} (``emprestar''): o direito de vida da variável é compartilhado com a referência, enquanto esta existir.
+Para suportar a mobilidade de valores para escopos mais externos, variáveis também podem ser movidas. Mover uma variável (para outra variável, para dentro de uma chamada de função ou retornando-a para fora de uma função) invalida a variável original que continha o objeto. O compilador proíbe acessos a esta variável após ela ter sido movida, pois seus conteúdos não são mais válidos, como mostrado na \autoref{code:moving-vars}. Por esta mesma razão, é proibido mover uma variável para a qual existam referências, que seriam invalidadas se isto acontecesse. Por isso, o ato de criar uma referência a partir de uma variável é chamado \emph{borrow} (``emprestar''): o direito de vida da variável é compartilhado com a referência, enquanto esta existir.
 
 A mesma limitação de mover para fora de uma variável emprestada também limita modificações à variável original. Isto evita uma classe de problemas causados pela modificação de um objeto enquanto existam referências à objetos contidos nele. Utilizando-se um vetor redimensionável, por exemplo, poderia ocorrer uma situação em que é criada uma referência a um elemento dentro do vetor. Se forem então permitidas modificações ao vetor, este poderia ser redimensionado de forma a invalidar a referência.
 
-Existem situações em que esta restrição de referências baseada no escopo léxico é limitada demais. Nestes casos é feito o uso de \emph{variáveis de lifetime}, que permitem que referências sejam retornadas de funções ou armazenadas em estruturas. Uma variável de \emph{lifetime} nomeada é adicionado a uma função, e pode ser usada para especificar que certas referências criadas dentro da função são válidas dentro de um escopo maior que a chamada, correspondendo invés a um escopo herdado da função que a chamou. \citep{rust-lifetimes}
+Existem usos esta restrição de referências baseada exclusivamente no escopo léxico é muito limitada para expressar. Nestes casos é feito o uso de \emph{variáveis de lifetime}, que permitem que referências sejam retornadas de funções ou armazenadas em estruturas. Uma \emph{lifetime} nomeada é adicionado a uma função, e pode ser usada para especificar que certas referências criadas dentro da função são válidas dentro de um escopo maior que a chamada, correspondendo a um escopo herdado da função que a chamou. Um exemplo do uso desse mecanismo pode ser visto na \autoref{code:named-lifetime}. \citep{rust-lifetimes}
 
-\todo{Exemplos}
+\begin{figure}
+	\centering
+	\begin{minipage}[c]{0.45\textwidth}
+		\begin{lstlisting}[language=Rust]
+struct Coisa;
+
+fn foobar() -> Box<Coisa> {
+	let a = Coisa; // Alocado na pilha
+	let b = box Coisa; // Alocado no heap
+
+	let c = b; // Movido de b para c
+
+	b // ERRO -- Move e tenta retornar b
+}
+		\end{lstlisting}
+		\begin{lstlisting}[numbers=none, breaklines=true]
+<anon>:9:5: 9:6 error: use of moved value: `b`
+<anon>:7:9: 7:10 note: `b` moved here because it has type `Box<Coisa>`, which is moved by default (use `ref` to override)
+<anon>:7     let c = b;
+		\end{lstlisting}
+		\caption{
+			Exemplo do rastreio de validade de variáveis detectando uso de uma variável já movida.
+		}
+		\label{code:moving-vars}
+	\end{minipage}%
+	\hspace{2em}%
+	\begin{minipage}[c]{0.45\textwidth}
+		\begin{lstlisting}[language=Rust]
+fn get_first<T, 'a>
+		(v: &'a Vec<T>) -> &'a T {
+	v[0]
+}
+		\end{lstlisting}
+		\caption[Exemplo de uso de uma \emph{lifetime} nomeada.]{
+			Exemplo de uso de uma \emph{lifetime} nomeada. A sintaxe \texttt{'a} é utilizada para introduzir um nome de \emph{lifetime} que é então usado para especificar que a referência retornada pela função tem o mesmo período de validade que a referência passada como parâmetro.
+		}
+		\label{code:named-lifetime}
+	\end{minipage}
+\end{figure}
 
 \subsection{Prevenção de \emph{Aliasing}}
 
-Para facilitar a análise do comportamento de um programa pelo usuário, Rust também impõe restrições quanto a mutabilidade de referências a objetos. Referências \emph{únicas} ou \emph{mutáveis} permitem a modificação do objeto a que apontam, mas restringem qualquer acesso a ele sem ser pela referência enquanto estiver emprestado. Referências \emph{compartilhadas} ou \emph{imutáveis} restringem a modificação do objeto para a qual apontam, mas permitem a existência de várias delas apontando para o mesmo. Isto garante que, se uma função receber uma referência compartilhada, o objeto a qual ela aponta nunca sera modificado durante a duração da função, não precisando o programador ou o compilador preocupar-se com efeitos colaterais de operações em outros objetos. Da mesma forma, se uma função receber uma função única, poderá modificá-la sem se preocupar que isto irá interferir com outros objetos ou referências presentes dentro da função. Alguns exemplos destas situações são mostrados na figura~\ref{code:aliasing}. \citep{rust-lifetimes}
-
-Esta garantia de que valores só podem ser modificados através de um único ponto por vez também automaticamente assegura que não existam erros de sincronização em programas concorrentes. Dados compartilhados por vários \emph{threads} serão acessados exclusivamente através de referências compartilhadas, com a garantia de que não serão modificados, e assim não precisam de exclusão mútua para evitar condições de corrida. Por outro lado, se um \emph{thread} possuir possuir uma referência única, sabe-se que este dado não pode ser lido em nenhum outro lugar, também evitando a necessidade de sincronismo durante modificações.
+Para facilitar a análise do comportamento de um programa pelo usuário, Rust também impõe restrições quanto a mutabilidade de referências a objetos. Referências \emph{únicas} ou \emph{mutáveis} permitem a modificação do objeto a que apontam, mas restringem qualquer acesso a ele sem ser pela referência enquanto estiver emprestado. Referências \emph{compartilhadas} ou \emph{imutáveis} restringem a modificação do objeto para a qual apontam, mas permitem a existência de várias delas apontando para o mesmo. Isto garante que, se uma função receber uma referência compartilhada, o objeto a qual ela aponta nunca sera modificado durante a duração da função, não precisando o programador ou o compilador preocupar-se com efeitos colaterais de operações em outros objetos. Da mesma forma, se uma função receber uma função única, poderá modificá-la sem se preocupar que isto irá interferir com outros objetos ou referências presentes dentro da função. Exemplos destas situações são mostrados na \autoref{code:aliasing}. \citep{rust-lifetimes}
 
 \begin{figure}
 	\centering
@@ -291,7 +327,7 @@ fn main() {
 	let mut n = 52u32;
 
 	let a = &n;
-	let b = &n; // OK - Duas referencias somente-leitura
+	let b = &n; // OK -- Duas referencias somente-leitura
 
 	println!("{} {}", *a, *b);
 }
@@ -306,9 +342,9 @@ fn main() {
 	let mut n = 52u32;
 
 	let a = &n;
-	let b = &n; // OK - Duas referências somente-leitura
+	let b = &n; // OK -- Duas referências somente-leitura
 
-	// ERRO - Não pode modificar referência compartilhada
+	// ERRO -- Não pode modificar referência compartilhada
 	*a = 24;
 
 	println!("{} {}", *a, *b);
@@ -328,7 +364,7 @@ fn main() {
 fn main() {
 	let mut n = 52u32;
 
-	let a = &mut n; // OK - Uma referência mutável
+	let a = &mut n; // OK -- Uma referência mutável
 
 	*a = 24; // OK
 
@@ -345,7 +381,7 @@ fn main() {
 	let mut n = 52u32;
 
 	let a = &mut n;
-	let b = &n; // ERRO - n já tem uma referência mutável
+	let b = &n; // ERRO -- n já tem uma referência mutável
 
 	println!("{} {}", *a, *b);
 }
@@ -365,11 +401,13 @@ fn main() {
 	\label{code:aliasing}
 \end{figure}
 
+Esta garantia de que valores só podem ser modificados através de um único ponto por vez também automaticamente assegura que não existam erros de sincronização em programas concorrentes. Dados compartilhados por vários \emph{threads} serão acessados exclusivamente através de referências compartilhadas, com a garantia de que não serão modificados, e assim não precisam de exclusão mútua para evitar condições de corrida. Por outro lado, se um \emph{thread} possuir possuir uma referência única, sabe-se que este dado não pode ser lido em nenhum outro lugar, também evitando a necessidade de sincronismo durante modificações.
+
 \subsection{\emph{Traits}}
 
-O projeto de Rust considera importante o suporte a programação genérica sobre tipos polimórficos suporta o conceito de herança de classes. No entanto, ainda é essencial suportar o uso polimórfico de objetos. Este suporte é fornecido através do conceito de \emph{traits}. \emph{traits} são similares aos conceitos de \emph{interfaces} ou \emph{type-classes} \citep{wadler1989}: um tipo apresentando uma interface que consiste apenas de declarações de funções, sem campos de dados ou implementação, e que forma um contrato especificando a interação entre dois componentes do código. Estas funções devem ser posteriormente implementadas por um tipos concretos, de acordo com o contrato estabelecido, permitindo que estes tipos sejam usados de forma genérica através da interface. Um dado tipo pode implementar mais de uma interface, permitindo expor vários conjuntos de funcionalidade distintos. \citep{rust-guide} \todo {exemplo}
+O projeto de Rust considera importante o suporte a programação genérica sobre tipos polimórficos suporta o conceito de herança de classes. No entanto, ainda é essencial suportar o uso polimórfico de objetos. Este suporte é fornecido através do conceito de \emph{traits}. \emph{traits} são similares aos conceitos de \emph{interfaces} ou \emph{type-classes} \citep{wadler1989}: um tipo apresentando uma interface que consiste apenas de declarações de funções, sem campos de dados ou implementação, e que forma um contrato especificando a interação entre dois componentes do código. Estas funções devem ser posteriormente implementadas por um tipos concretos, de acordo com o contrato estabelecido, permitindo que estes tipos sejam usados de forma genérica através da interface. Um dado tipo pode implementar mais de uma interface, permitindo expor vários conjuntos de funcionalidade distintos. \citep{rust-guide} \todo{exemplo}
 
-Uma vantagem de \emph{traits} sobre o modelo de herança tradicional é que se evita a ambiguidade presente em casos onde duas superclasses em de um tipo herdam de um mesmo tipo compartilhado. Isto cria uma ambiguidade onde cada classe pode conter dentro de si uma instância separada dos campos das classes pai ou onde ambas compartilham os mesmos campos. Esta situação é chamada de ``problema diamante'', devido a estrutura do grafo de herança resultante. Por esta razão, muitas linguagens restringem seu suporte à herança simples, permitindo que classes herdem de somente uma superclasse. \citep{scharli2003} \todo{diagrama}
+Uma vantagem de \emph{traits} sobre o modelo de herança tradicional é que se evita a ambiguidade presente em casos onde duas superclasses em de um tipo herdam de um mesmo tipo compartilhado. Isto cria uma ambiguidade onde cada classe pode conter dentro de si uma instância separada dos campos das classes pai ou onde ambas compartilham os mesmos campos. Esta situação é chamada de ``problema diamante'', devido a estrutura do grafo de herança resultante. Por esta razão, muitas linguagens restringem seu suporte à herança simples, permitindo que classes herdem de somente uma superclasse. \citep{scharli2003}
 
 Outra vantagem é a possibilidade de se estender tipos através da definição posterior de um novo \emph{trait}. Como a implementação de um \emph{trait} para certo tipo é separada da definição do tipo em si, pode-se fazer um tipo pré-existente suportar novas interfaces. \todo{exemplo junto com o 1o?}
 
@@ -421,16 +459,6 @@ técnica de \emph{path tracing}, que difere das anteriores desenvolvidas por \ci
 os de baixa profundidade, e assim traçando apenas um raio recursivo por amostra, evitando o
 crescimento exponencial do número de raios traçados que ocorre com as outras técnicas.
 
-Embora capaz de produzir imagens extremamente realísticas, \emph{path tracing} pode requerer uma
-quantidade impraticável de amostras para renderizar satisfatoriamente certos tipos de cenas onde não
-exista uma linha de visão direta entre as superfícies e as fontes de luz. Nestas cenas, a maioria da
-iluminação se dá através de caminhos indiretos ou através de superfícies refratantes que projetam
-padrões de luz complicados em outras superfícies (conhecidos como \emph{caustics}.) Para contornar
-estes problemas foram desenvolvidas inúmeras extensões ao algoritmo de \emph{path tracing}. Dentre
-elas se destaca \emph{bidirectional path tracing}, introduzido por \citet{lafortune1993}. Este
-algoritmo foi depois reformulado em \citep{veach1997}, onde também foi introduzida a técnica de
-\emph{multiple importance sampling} e o algoritmo \emph{Metropolis light transport}.
-
 \begin{figure}
 	\centering
 	\includegraphics[width=0.5\textwidth]{exemplo_imagem}
@@ -442,15 +470,25 @@ algoritmo foi depois reformulado em \citep{veach1997}, onde também foi introduz
 	\label{fig:path_tracing}
 \end{figure}
 
+Embora capaz de produzir imagens extremamente realísticas, \emph{path tracing} pode requerer uma
+quantidade impraticável de amostras para renderizar satisfatoriamente certos tipos de cenas onde não
+exista uma linha de visão direta entre as superfícies e as fontes de luz. Nestas cenas, a maioria da
+iluminação se dá através de caminhos indiretos ou através de superfícies refratantes que projetam
+padrões de luz complicados em outras superfícies (conhecidos como \emph{caustics}.) Para contornar
+estes problemas foram desenvolvidas inúmeras extensões ao algoritmo de \emph{path tracing}. Dentre
+elas se destaca \emph{bidirectional path tracing}, introduzido por \citet{lafortune1993}. Este
+algoritmo foi depois reformulado em \citep{veach1997}, onde também foi introduzida a técnica de
+\emph{multiple importance sampling} e o algoritmo \emph{Metropolis light transport}.
+
 \section{SmallVCM}
 
-SmallVCM \citep{smallvcm} é um renderizador de imagens, baseado em algoritmos de \emph{ray tracing} e \emph{path tracing}, desenvolvido pelo autor para servir como uma implementação de exemplo de seu algoritmo \emph{Vertex Connection and Merging} \citep{georgiev2012}. Além deste algoritmo, o programa também implementa uma variedade de outros incluindo \emph{path tracing}, \emph{light tracing}, \emph{bidirectional path tracing} e \emph{photon mapping}. Por ter propósito de educar sobre os algoritmos, não possui funcionalidades avançadas como animação e é limitado a renderizar um pequeno conjunto de cenas de exemplo incluídas no programa. Uma imagem gerada com o programa, utilizando o algoritmo de \emph{vertex connection and merging}, pode ser vista na figura~\ref{fig:smallvcm_img}. O programa também possui uma função que gera um relatório de comparação da performance relativa de cada algoritmo.
+SmallVCM \citep{smallvcm} é um renderizador de imagens baseado em algoritmos de \emph{ray tracing} e \emph{path tracing} desenvolvido pelo autor para servir como uma implementação de exemplo de seu algoritmo \emph{Vertex Connection and Merging} \citep{georgiev2012}. Além deste algoritmo, o programa também implementa uma variedade de outros incluindo \emph{path tracing}, \emph{light tracing}, \emph{bidirectional path tracing} e \emph{photon mapping}. Por ter propósito de educar sobre os algoritmos, não possui funcionalidades avançadas como animação e é limitado a renderizar um pequeno conjunto de cenas de exemplo incluídas no programa. Uma imagem gerada com o programa pode ser vista na \autoref{fig:smallvcm_img}. O programa também possui uma função que gera um relatório de comparação da performance relativa de cada algoritmo.
 
 \begin{figure}
 	\centering
 	\includegraphics[width=0.5\textwidth]{ggbs_s_vcm}
-	\caption{
-		Uma imagem gerada pelo SmallVCM.
+	\caption[Uma imagem gerada pelo SmallVCM.]{
+		Uma imagem gerada pelo SmallVCM utilizando o algoritmo \emph{Vertex Connection and Merging}.
 	}
 	\label{fig:smallvcm_img}
 \end{figure}
@@ -509,9 +547,7 @@ No código do SmallVCM existem alumas instâncias de hierarquias de herança de 
 
 Duas dessas hierarquias, de formas geométricas e de fontes luminosas, não possuem campos de dados na classe base e portanto podem ser diretamente convertidos para \emph{traits} a serem implementados por estruturas.
 
-Para realizar a conversão da hierarquia de \texttt{AbstractRenderer}, que possui campos de dados, para Rust, adotou-se a seguinte metodologia: Como a classe base contem campos de dados, é definida uma estrutura \texttt{RendererBase}, contendo estes campos compartilhados e quaisquer funções \emph{não-virtuais} da classe base. É também definido um \emph{trait} \texttt{AbstractRenderer} contendo apenas as declarações das funções \emph{virtuais} e também adicionando duas novas funções: \texttt{base} e \texttt{base\_mut}. O propósito destas duas funções é retornar uma referência ou uma referência única, respectivamente, para uma instância \texttt{RendererBase} contida dentro do objeto, assim permitindo que código no resto do programa consiga pegar uma referência para as funções e dados da ``classe base''. As classes que originalmente derivavam de \texttt{AbstractRenderer} no código \Cpp\ agora incluem um \texttt{RendererBase} como um de seus campos e implementam o \emph{trait} para extender a estrutura/\emph{trait} base. As duas implementações são demonstradas na figura~\ref{code:inheritance-base}.
-
-O resultado desta conversão resulta num uso um tanto inconveniente do tipo, pois a base precisa ser explicitamente acessada quando se quer utilizar um campo, mas no geral não forçou nenhuma mudança arquitetural de grande porte.
+Para realizar a conversão da hierarquia de \texttt{AbstractRenderer}, que possui campos de dados, para Rust, adotou-se a seguinte metodologia: Como a classe base contem campos de dados, é definida uma estrutura \texttt{RendererBase}, contendo estes campos compartilhados e quaisquer funções \emph{não-virtuais} da classe base. É também definido um \emph{trait} \texttt{AbstractRenderer} contendo apenas as declarações das funções \emph{virtuais} e também adicionando duas novas funções: \texttt{base} e \texttt{base\_mut}. O propósito destas duas funções é retornar uma referência ou uma referência única, respectivamente, para uma instância \texttt{RendererBase} contida dentro do objeto, assim permitindo que código no resto do programa consiga pegar uma referência para as funções e dados da ``classe base''. As classes que originalmente derivavam de \texttt{AbstractRenderer} no código \Cpp\ agora incluem um \texttt{RendererBase} como um de seus campos e implementam o \emph{trait} para extender a estrutura/\emph{trait} base. As duas implementações são demonstradas na \autoref{code:inheritance-base}.
 
 \begin{figure}
 	\centering
@@ -612,6 +648,8 @@ impl<'a> AbstractRenderer<'a> for EyeLight<'a> {
 	\label{code:inheritance-base}
 \end{figure}
 
+O resultado desta conversão resulta num uso um tanto inconveniente do tipo, pois a base precisa ser explicitamente acessada quando se quer utilizar um campo, mas no geral não forçou nenhuma mudança arquitetural de grande porte.
+
 \subsection{Sobrecarga de Funções}
 
 Devido a falta de suporte a sobrecarga de funções, algumas funções tiveram que ser renomeadas durante o processo. No geral utilizou-se o mesmo nome da função original, com um sufixo indicando o tipo de parâmetro aceito pela função. Este ponto não gerou outras dificuldades.
@@ -620,7 +658,7 @@ Devido a falta de suporte a sobrecarga de funções, algumas funções tiveram q
 
 O módulo \texttt{math.rs} contém uma biblioteca de tipos matemáticos, consistindo de vetores 2D e 3D, além de matrizes 4x4. Este arquivo sofreu várias modificações comparado ao original devido ao seu frequente uso de sobrecarga de operadores, que diferem em sintaxe e implementação, e conversões automáticas, que não são suportadas em Rust.
 
-Em Rust a sobrecarga de operadores é feita através da implementação de \emph{traits} especiais. No entanto, este é um procedimento muito mais verboso do que simplesmente declarar funções com um nome especial como é feito em \Cpp. Assim, para evitar uma grande quantidade de duplicação de código, foi usada a funcionalidade de macros de Rust para gerar as implementações dos operadores para \texttt{Vec2} e \texttt{Vec3} sem precisar repetir todas as definições. Parte da definição desta macro e sua correspondente expansão são mostradas na figura~\ref{code:mathmacro}.
+Em Rust a sobrecarga de operadores é feita através da implementação de \emph{traits} especiais. No entanto, este é um procedimento muito mais verboso do que simplesmente declarar funções com um nome especial como é feito em \Cpp. Assim, para evitar uma grande quantidade de duplicação de código, foi usada a funcionalidade de macros de Rust para gerar as implementações dos operadores para \texttt{Vec2} e \texttt{Vec3} sem precisar repetir todas as definições. Parte da definição desta macro e sua correspondente expansão são mostradas na \autoref{code:mathmacro}.
 
 \begin{figure}
 \begin{lstlisting}[language=Rust]
@@ -681,9 +719,7 @@ Rust ainda está em um período de intenso desenvolvimento e por isso mudanças 
 
 \subsection{\emph{Enums}}
 
-O módulo de configuração (\texttt{config.rs}) faz uso de uma \emph{enum} para selecionar o algoritmo. Em \Cpp, valores de uma enumeração tem um respectivo valor inteiro associado. Rust não associa valores inteiros correspondentes a cada valor da enumeração, pois valores podem ter outros itens de dados associados a eles, sendo análogos a Tipos de Dados Algébricos presentes em Haskell ou Standard ML.  Portanto, algumas técnicas utilizadas pelo código original, como iterar através dos possíveis valores numéricos das enumerações ou as utilizar como índice em um vetor, não são possíveis aqui. Estes usos são substituídos por usos da expressão \texttt{match}, que por requerer a menção dos nomes dos itens da enumeração é mais repetitiva, mas também mais clara e robusta, pois os itens da enumeração não correm risco de sair fora de sincronia com os índices do vetor. Uma comparação entre os dois tipos de código pode ser vista na figura~\ref{code:enums}. Nota-se que os testes para verificar se o valor está dentro do intervalo esperado não são necessários em Rust, pois a linguagem não permite a atribuição de valores não presentes na enumeração a variáveis desse tipo.
-
-Esta funcionalidade também foi utilizada de maneira vantajosa, substituindo um par de variáveis de configuração que determinava a condição de parada do algoritmo, dos quais apenas uma poderia estar ativa de cada vez, por uma \emph{enum} de duas variantes, cada uma contendo seu respectivo parâmetro. Esta mudança evita que o sistema acidentalmente seja colocado em um estado inválido, e também remove ambiguidade na hora de testar pela condição.
+O módulo de configuração (\texttt{config.rs}) faz uso de uma \emph{enum} para selecionar o algoritmo. Em \Cpp, valores de uma enumeração tem um respectivo valor inteiro associado. Rust não associa valores inteiros correspondentes a cada valor da enumeração, pois valores podem ter outros itens de dados associados a eles, sendo análogos a Tipos de Dados Algébricos presentes em Haskell ou Standard ML.  Portanto, algumas técnicas utilizadas pelo código original, como iterar através dos possíveis valores numéricos das enumerações ou as utilizar como índice em um vetor, não são possíveis aqui. Estes usos são substituídos por usos da expressão \texttt{match}, que por requerer a menção dos nomes dos itens da enumeração é mais repetitiva, mas também mais clara e robusta, pois os itens da enumeração não correm risco de sair fora de sincronia com os índices do vetor. Uma comparação entre os dois tipos de código pode ser vista na \autoref{code:enums}. Nota-se que os testes para verificar se o valor está dentro do intervalo esperado não são necessários em Rust, pois a linguagem não permite a atribuição de valores não presentes na enumeração a variáveis desse tipo.
 
 \begin{figure}
 	\centering
@@ -773,6 +809,8 @@ impl Algorithm {
 	\label{code:enums}
 \end{figure}
 
+Esta funcionalidade também foi utilizada de maneira vantajosa, substituindo um par de variáveis de configuração que determinava a condição de parada do algoritmo, dos quais apenas uma poderia estar ativa de cada vez, por uma \emph{enum} de duas variantes, cada uma contendo seu respectivo parâmetro. Esta mudança evita que o sistema acidentalmente seja colocado em um estado inválido, e também remove ambiguidade na hora de testar pela condição.
+
 \subsection{Ponteiros Nulos}
 
 Como Rust desestimula o uso de ponteiros, programadores devem geralmente substituí-los por referências, que não podem ser nulas e que também estão são verificadas em compilação para garantir que nunca se tornem inválidas, ou utilizar o tipo \texttt{Box<T>}, que representa uma alocação de memória pertencente a uma variável ou campo e que é gerenciada automaticamente para manter estas mesmas garantias.
@@ -801,10 +839,10 @@ Para medir o tempo de execução do algoritmo, foi utilizada a ferramenta \textt
 
 \begin{table}
 	\centering
-	\begin{tabular}{c|c|c|c|c}
+	\begin{tabular}{|c|c|c|c|c|} \hline
 	Iterações & \emph{Threads} & rustc & clang & gcc \\ \hline
 	100 & 1 & \SI{7.665}{\s} (85.45\%) & \SI{8.253}{\s} (92\%) & \SI{ 8.970}{\s} (100\%) \\
-	400 & 4 & \SI{8.802}{\s} (84.59\%) & ---                   & \SI{10.405}{\s} (100\%) \\
+	400 & 4 & \SI{8.802}{\s} (84.59\%) & ---                   & \SI{10.405}{\s} (100\%) \\ \hline
 	\end{tabular}
 	\caption[Tempo de execução do algoritmo \texttt{EyeLight} em diferentes implementações e compiladores.]{
 		Tempo de execução do algoritmo \texttt{EyeLight} em diferentes implementações e compiladores. As porcentagens indicam o tempo relativo em relação a versão mais lenta.
@@ -812,7 +850,11 @@ Para medir o tempo de execução do algoritmo, foi utilizada a ferramenta \textt
 	\label{tab:vcm-timings}
 \end{table}
 
-Os tempos e as diferenças entre eles são consistentes através de várias execuções dos testes e mantém-se proporcionais ao número de iterações realizadas quando este parâmetro é alterado.
+Os tempos e as diferenças entre eles são consistentes através de várias execuções dos testes e mantém-se proporcionais ao número de iterações realizadas quando este parâmetro é alterado. Perfis de desempenho gerados utilizando o comando \texttt{perf record} não indicavam nenhum \emph{hot spot} presente em uma versão mas ausente em outra: a versão Rust era apenas cerca de 10\% rápida nas funções de intersecção, mais frequentemente utilizadas durante a execução.
+
+\subsection{Interpretação dos Resultados}
+
+
 
 \chapter{Conclusão}
 
