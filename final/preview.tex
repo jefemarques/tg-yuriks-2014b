@@ -91,6 +91,7 @@
 	texcl=true,
 	%numbers=left,
 	showstringspaces=false,
+	commentstyle=\normalfont
 }
 
 % For Computer Modern:
@@ -145,6 +146,9 @@ afim de avaliar se a linguagem realmente atende as necessidades deste tipo de ap
 \end{abstract}
 
 \tableofcontents
+\listoffigures
+\listoftables
+%\listofappendix
 
 \setlength{\baselineskip}{1.5\baselineskip}
 
@@ -261,9 +265,9 @@ aplicações embarcadas em microprocessadores.
 
 \subsection{\emph{Lifetimes}}
 
-Para criar uma linguagem segura, eficiente e sem \emph{runtime}, é necessário assegurar-se que todas os ponteiros, ou referências, no programa sejam válidas quando são acessadas. Para que isto seja possível sem incidir um custo na execução, esta é uma tarefa que precisa ser feita durante a compilação do programa, e não durante sua execução, como é feito em muitas linguagens onde todos os acessos de ponteiro são testados por validez antes de serem executados ou onde esta tarefa é deixada a cargo do programador, resultando em eventuais erros.
+Para criar uma linguagem segura, eficiente e sem \emph{runtime}, é necessário assegurar-se que todos os ponteiros, ou referências, no programa sejam válidas quando são acessadas. Para que isto seja possível sem incidir um custo na execução, esta é uma tarefa que precisa ser feita durante a compilação do programa, e não durante sua execução, como é feito em muitas linguagens onde todos os acessos de ponteiro são testados por validez antes de serem executados ou onde esta tarefa é deixada a cargo do programador, resultando em eventuais erros.
 
-Rust modela esta restrição fazendo uma análise dos objetos (Tipos básicos, estruturas, referências, etc.) que tem sua vida delimitada por escopos léxicos no programa. É permitido que uma variável seja usada em escopos dentro do qual ela foi definida, e quaisquer referências criadas a esta variável tem seu tipo associado ao escopo, de forma a proibir que estas escapem para um escopo superior (onde elas não seriam mais necessariamente válidas, pois a variável teria sido destruída no fim do seu respectivo escopo.) A região na qual uma variável é válida e referências a ela podem existir é chamada de sua \emph{lifetime}.
+Rust modela esta restrição fazendo uma análise do fluxo de valores e referências na função, que tem sua vida delimitada por escopos léxicos no programa. É permitido que uma variável seja usada em escopos dentro do qual ela foi definida, e quaisquer referências criadas a esta variável tem seu tipo associado ao escopo, de forma a proibir que estas escapem para um escopo superior (onde elas não seriam mais necessariamente válidas, pois a variável teria sido destruída no fim do seu respectivo escopo.) A região na qual uma variável é válida e referências a ela podem existir é chamada de sua \emph{lifetime}.
 
 Para suportar a mobilidade de valores para escopos mais externos, variáveis também podem ser movidas. Mover uma variável (para outra variável, para dentro de uma chamada de função ou retornando-a para fora de uma função) invalida a variável original que continha o objeto. O compilador proíbe acessos a esta variável após ela ter sido movida, pois seus conteúdos não são mais válidos. Por esta mesma razão, é proibido mover uma variável para a qual existam referências, que seriam invalidadas se isto acontecesse. Por isso, o ato de criar uma referência a partir de uma variável é chamado \emph{borrow} (``emprestar''): o direito de vida da variável é compartilhado com a referência, enquanto esta existir.
 
@@ -275,11 +279,91 @@ Existem situações em que esta restrição de referências baseada no escopo l�
 
 \subsection{Prevenção de \emph{Aliasing}}
 
-Para facilitar a análise do comportamento de um programa pelo usuário, Rust também impõe restrições quanto a mutabilidade de referências a objetos. Referências \emph{únicas} ou \emph{mutáveis} permitem a modificação do objeto a que apontam, mas restringem qualquer acesso a ele sem ser pela referência enquanto estiver emprestado. Referências \emph{compartilhadas} ou \emph{imutáveis} restringem a modificação do objeto para a qual apontam, mas permitem a existência de várias delas apontando para o mesmo. Isto garante que, se uma função receber uma referência compartilhada, o objeto a qual ela aponta nunca sera modificado durante a duração da função, não precisando o programador ou o compilador preocupar-se com efeitos colaterais de operações em outros objetos. Da mesma forma, se uma função receber uma função única, poderá modificá-la sem se preocupar que isto irá interferir com outros objetos ou referências presentes dentro da função. \citep{rust-lifetimes}
+Para facilitar a análise do comportamento de um programa pelo usuário, Rust também impõe restrições quanto a mutabilidade de referências a objetos. Referências \emph{únicas} ou \emph{mutáveis} permitem a modificação do objeto a que apontam, mas restringem qualquer acesso a ele sem ser pela referência enquanto estiver emprestado. Referências \emph{compartilhadas} ou \emph{imutáveis} restringem a modificação do objeto para a qual apontam, mas permitem a existência de várias delas apontando para o mesmo. Isto garante que, se uma função receber uma referência compartilhada, o objeto a qual ela aponta nunca sera modificado durante a duração da função, não precisando o programador ou o compilador preocupar-se com efeitos colaterais de operações em outros objetos. Da mesma forma, se uma função receber uma função única, poderá modificá-la sem se preocupar que isto irá interferir com outros objetos ou referências presentes dentro da função. Alguns exemplos destas situações são mostrados na figura~\ref{code:aliasing}. \citep{rust-lifetimes}
 
 Esta garantia de que valores só podem ser modificados através de um único ponto por vez também automaticamente assegura que não existam erros de sincronização em programas concorrentes. Dados compartilhados por vários \emph{threads} serão acessados exclusivamente através de referências compartilhadas, com a garantia de que não serão modificados, e assim não precisam de exclusão mútua para evitar condições de corrida. Por outro lado, se um \emph{thread} possuir possuir uma referência única, sabe-se que este dado não pode ser lido em nenhum outro lugar, também evitando a necessidade de sincronismo durante modificações.
 
-\todo{exemplos}
+\begin{figure}
+	\centering
+	\begin{subfigure}[c]{0.48\textwidth}
+	\begin{lstlisting}[language=Rust]
+fn main() {
+	let mut n = 52u32;
+
+	let a = &n;
+	let b = &n; // OK - Duas referencias somente-leitura
+
+	println!("{} {}", *a, *b);
+}
+	\end{lstlisting}
+	\caption{}
+	\label{code:aliasing:shared1}
+	\end{subfigure}
+	~~~
+	\begin{subfigure}[c]{0.48\textwidth}
+	\begin{lstlisting}[language=Rust]
+fn main() {
+	let mut n = 52u32;
+
+	let a = &n;
+	let b = &n; // OK - Duas referências somente-leitura
+
+	// ERRO - Não pode modificar referência compartilhada
+	*a = 24;
+
+	println!("{} {}", *a, *b);
+}
+	\end{lstlisting}
+	\begin{lstlisting}[numbers=none, breaklines=true]
+<anon>:8:5: 8:12 error: cannot assign to immutable dereference of `&`-pointer `*a`
+<anon>:8     *a = 24;
+             ^~~~~~~
+	\end{lstlisting}
+	\caption{}
+	\label{code:aliasing:shared2}
+	\end{subfigure}
+	\\[2em]
+	\begin{subfigure}[c]{0.48\textwidth}
+	\begin{lstlisting}[language=Rust]
+fn main() {
+	let mut n = 52u32;
+
+	let a = &mut n; // OK - Uma referência mutável
+
+	*a = 24; // OK
+
+	println!("{}", *a);
+}
+	\end{lstlisting}
+	\caption{}
+	\label{code:aliasing:mut1}
+	\end{subfigure}
+	~~~
+	\begin{subfigure}[c]{0.48\textwidth}
+	\begin{lstlisting}[language=Rust]
+fn main() {
+	let mut n = 52u32;
+
+	let a = &mut n;
+	let b = &n; // ERRO - n já tem uma referência mutável
+
+	println!("{} {}", *a, *b);
+}
+	\end{lstlisting}
+	\begin{lstlisting}[numbers=none, breaklines=true]
+<anon>:5:14: 5:15 error: cannot borrow `n` as immutable because it is also borrowed as mutable
+<anon>:5     let b = &n;
+                      ^
+<anon>:4:18: 4:19 note: previous borrow of `n` occurs here; the mutable borrow prevents subsequent moves, borrows, or modification of `n` until the borrow ends
+<anon>:4     let a = &mut n;
+                          ^
+	\end{lstlisting}
+	\caption{}
+	\label{code:aliasing:mut2}
+	\end{subfigure}
+	\caption{Exemplos de uso de referências e restrições de \emph{aliasing}.}
+	\label{code:aliasing}
+\end{figure}
 
 \subsection{\emph{Traits}}
 
@@ -350,7 +434,7 @@ algoritmo foi depois reformulado em \citep{veach1997}, onde também foi introduz
 \begin{figure}
 	\centering
 	\includegraphics[width=0.5\textwidth]{exemplo_imagem}
-	\caption{
+	\caption[Um exemplo de uma imagem gerada utilizando \emph{path tracing}.]{
 		Um exemplo de uma imagem gerada utilizando \emph{path tracing}. Note como a luz que atinge o
 		plano xadrez é refletida de volta para iluminar a esfera, um fenômeno conhecido como
 		\emph{iluminação indireta} e que é corretamente simulado pelo algoritmo.
@@ -703,7 +787,7 @@ Para a leitura de parâmetros passado via linha de comando, foi utilizado o mód
 
 \chapter{Resultados}
 
-Ao fim do trabalho, havia sido portado para Rust código suficiente do SmallVCM para executar o algoritmo \texttt{EyeLight}. Funções que não eram necessárias para este caminho de execução não foram definidas ou foram definidas como \emph{placeholders} que abortam o programa quando executadas, assim certificando que não são chamadas durante o teste. Não foram feitas mudanças algorítmicas, mas detalhes da implementação foram ajustados a medida que isto era requirido pela linguagem, como descrito no capítulo anterior, ou para produzir código mais idiomático se isto pudesse ser feito sem re-estruturações significativas da estrutura do programa.
+Ao fim do trabalho, havia sido portado para Rust código suficiente do SmallVCM para executar o algoritmo \texttt{EyeLight}. Funções que não eram necessárias para este caminho de execução não foram definidas ou foram definidas como \emph{placeholders} que abortam o programa quando executadas, assim certificando que não são chamadas durante o teste. Não foram feitas mudanças algorítmicas, mas detalhes da implementação foram ajustados a medida que isto era requirido pela linguagem, como descrito no capítulo anterior, ou para produzir código mais idiomático se isto pudesse ser feito sem re-estruturações significativas da estrutura do programa. Quando executados com os mesmos parâmetros, as saída da \emph{port} é fiel a do original.
 
 \section{Testes de Desempenho}
 
@@ -722,7 +806,9 @@ Para medir o tempo de execução do algoritmo, foi utilizada a ferramenta \textt
 	100 & 1 & \SI{7.665}{\s} (85.45\%) & \SI{8.253}{\s} (92\%) & \SI{ 8.970}{\s} (100\%) \\
 	400 & 4 & \SI{8.802}{\s} (84.59\%) & ---                   & \SI{10.405}{\s} (100\%) \\
 	\end{tabular}
-	\caption{Tempo de execução do algoritmo \texttt{EyeLight} em diferentes implementações e compiladores. As porcentagens indicam o tempo relativo em relação a versão mais lenta.}
+	\caption[Tempo de execução do algoritmo \texttt{EyeLight} em diferentes implementações e compiladores.]{
+		Tempo de execução do algoritmo \texttt{EyeLight} em diferentes implementações e compiladores. As porcentagens indicam o tempo relativo em relação a versão mais lenta.
+	}
 	\label{tab:vcm-timings}
 \end{table}
 
