@@ -8,6 +8,7 @@
 
 \usepackage[T1]{fontenc}
 \usepackage{fix-cm}
+\usepackage{microtype} % Nicer text flowing & typography
 \usepackage{times, color}
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
@@ -28,7 +29,7 @@
 
 %%% PAGE DIMENSIONS
 \usepackage[inner=30mm,outer=20mm,top=30mm,bottom=20mm]{geometry} 
-\usepackage{epstopdf}
+%\usepackage{epstopdf}
 \usepackage{graphicx}
 % \geometry{margin=2in} % for example, change the margins to 2 inches all round
 % \geometry{landscape} % set up the page for landscape
@@ -42,13 +43,31 @@
 %\usepackage{array} % for better arrays (eg matrices) in maths
 %\usepackage{paralist} % very flexible & customisable lists (eg. enumerate/itemize, etc.)
 \usepackage{siunitx}
-\usepackage{verbatim} % adds environment for commenting out blocks of text & for better verbatim
+%\usepackage{verbatim} % adds environment for commenting out blocks of text & for better verbatim
 \usepackage{listings}
-\usepackage{parcolumns}
+\usepackage{subcaption}
+\captionsetup{compatibility=false}
 %\usepackage{microtype}
 %\usepackage[numbers]{natbib}
 %\usepackage{subfig} % make it possible to include more than one captioned figure/table in a single float
 % These packages are all incorporated in the memoir class to one degree or another...
+
+\lstdefinelanguage{Rust}{
+  %keywords={typeof, new, true, false, catch, function, return, null, catch, switch, var, if, in, while, do, else, case, break},
+  keywords={struct, trait, fn, let, box, mut, pub, impl, for, match, const, if, as, enum, static},
+  %keywordstyle=\color{blue}\bfseries,
+  %ndkeywords={class, export, boolean, throw, implements, import, this},
+  ndkeywords={self, str, u32, uint},
+  %ndkeywordstyle=\color{darkgray}\bfseries,
+  %identifierstyle=\color{black},
+  sensitive=true,
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  %commentstyle=\color{purple}\ttfamily,
+  %stringstyle=\color[rgb]{0.0,0.4,0.65}\ttfamily,
+  %morestring=[b]',
+  morestring=[b]"
+}
 
 \lstset{
 	basicstyle=\scriptsize\ttfamily,
@@ -68,7 +87,10 @@
 		{â}{{\^a}}1 {ê}{{\^e}}1 {î}{{\^i}}1 {ô}{{\^o}}1 {û}{{\^u}}1
 		{Â}{{\^A}}1 {Ê}{{\^E}}1 {Î}{{\^I}}1 {Ô}{{\^O}}1 {Û}{{\^U}}1
 		{ã}{{\~a}}1 {Ã}{{\~A}}1 {õ}{{\~o}}1 {Õ}{{\~O}}1
-		{ç}{{\c c}}1 {Ç}{{\c C}}1
+		{ç}{{\c c}}1 {Ç}{{\c C}}1,
+	texcl=true,
+	%numbers=left,
+	showstringspaces=false,
 }
 
 % For Computer Modern:
@@ -239,7 +261,7 @@ aplicações embarcadas em microprocessadores.
 
 \subsection{\emph{Lifetimes}}
 
-Para criar uma linguagem segura, eficiente e sem \emph{runtime}, é necessário assegurar-se que todas os ponteiros, ou referências, no programa sejam válidas quando são acessadas. Para que isto seja possível sem incidir um custo na execução, esta é uma tarefa que precisa ser feita durante a compilação do programa, e não durante sua execução, como é feito em muitas linguagens onde todos os acessos de ponteiro são testados por validez antes de serem executados, ou onde esta tarefa é deixada a cargo do programador, resultando em eventuais erros.
+Para criar uma linguagem segura, eficiente e sem \emph{runtime}, é necessário assegurar-se que todas os ponteiros, ou referências, no programa sejam válidas quando são acessadas. Para que isto seja possível sem incidir um custo na execução, esta é uma tarefa que precisa ser feita durante a compilação do programa, e não durante sua execução, como é feito em muitas linguagens onde todos os acessos de ponteiro são testados por validez antes de serem executados ou onde esta tarefa é deixada a cargo do programador, resultando em eventuais erros.
 
 Rust modela esta restrição fazendo uma análise dos objetos (Tipos básicos, estruturas, referências, etc.) que tem sua vida delimitada por escopos léxicos no programa. É permitido que uma variável seja usada em escopos dentro do qual ela foi definida, e quaisquer referências criadas a esta variável tem seu tipo associado ao escopo, de forma a proibir que estas escapem para um escopo superior (onde elas não seriam mais necessariamente válidas, pois a variável teria sido destruída no fim do seu respectivo escopo.) A região na qual uma variável é válida e referências a ela podem existir é chamada de sua \emph{lifetime}.
 
@@ -269,9 +291,9 @@ Outra vantagem é a possibilidade de se estender tipos através da definição p
 
 \subsection{\texttt{unsafe}}
 
-Caso as limitações anteriormente descritas que são impostas no gerenciamento de memória e em referências mostrem-se muito restritivas durante a implementação de alguma estrutura de dados, algoritmo ou interface com outras bibliotecas ou APIs externas, existe a opção de fazer o uso de um bloco \texttt{unsafe}. Blocos \texttt{unsafe} não alteram a semântica da linguagem, mas relaxam restrições do verificador estático acerca de operações que não garantem a corretude do programa. Foram criados para expandir o campo de aplicação da linguagem, pois permitem que código Rust faça chamadas a funções definidas em outras linguagens (como funções de bibliotecas C ou do SO) e a conversão de referências para ponteiros não restritos. Cabe então ao programador verificar que as operações contidas nestes blocos não quebrem as invariantes assumidas pelo sistema de tipos. A intenção é que estes blocos sejam utilizados para implementar abstrações seguras por cima das operações necessárias, sendo facilmente identificados para fins de verificação de seu correto funcionamento.
+Caso as limitações anteriormente descritas que são impostas no gerenciamento de memória e em referências mostrem-se muito restritivas durante a implementação de alguma estrutura de dados, algoritmo ou interface com outras bibliotecas ou APIs externas, existe a opção de fazer o uso de um bloco \texttt{unsafe}. Blocos \texttt{unsafe} não alteram a semântica da linguagem, mas relaxam restrições do verificador estático acerca de operações que não garantem a corretude do programa. Foram criados para expandir o campo de aplicação da linguagem, pois permitem que código Rust faça chamadas a funções definidas em outras linguagens (como funções de bibliotecas C ou do SO) e a conversão de referências para ponteiros não restritos. Cabe então ao programador verificar que as operações contidas nestes blocos não quebrem as invariantes assumidas pelo sistema de tipos. A intenção é que estes blocos sejam utilizados para implementar abstrações seguras por cima das operações necessárias, sendo facilmente identificados para fins de verificação de seu correto funcionamento. \citep{rust-unsafe}
 
-A biblioteca da padrão, implementada completamente em Rust, inclui uma multitude de tipos que utilizam esta estratégia para fornecer contrapartidas checadas em \emph{runtime} das invariantes do sistema de tipos, como ponteiros com contagem de referências (tipo \texttt{Rc<T>}), uma variedade de estruturas de dados e estruturas de concorrencia, como o tipo \texttt{Mutex<T>}, que impede que um valor seja acessado sem antes adquirir uma trava.
+A biblioteca da padrão, implementada completamente em Rust, inclui uma multitude de tipos que utilizam esta estratégia para fornecer contrapartidas checadas em \emph{runtime} das invariantes do sistema de tipos, como ponteiros com contagem de referências (tipo \texttt{Rc<T>}), uma variedade de estruturas de dados e estruturas de concorrência, como o tipo \texttt{Mutex<T>}, que impede que um valor seja acessado sem antes adquirir uma trava.
 
 \section{\emph{Path Tracing}}
 
@@ -385,7 +407,7 @@ O SmallVCM original, sendo escrito em \Cpp\ precisa de um compilador para esta l
 
 \section{Metodologia da \emph{Port}}
 
-Estabeleceu-se um objetivo inicial de converter para Rust o conjunto de código necessário para renderizar uma imagem utilizando o algoritmo básico \emph{EyeLight}, que calcula apenas a incidência de luz direta de um fonte luminosa posicionada no observador, em modo \emph{single-threaded}. Isto possibilita que se tenha uma versão funcional para realizar testes de performance o mais cedo possível.
+Estabeleceu-se um objetivo inicial de converter para Rust o conjunto de código necessário para renderizar uma imagem utilizando o algoritmo básico \texttt{EyeLight}, que calcula apenas a incidência de luz direta de um fonte luminosa posicionada no observador, em modo \emph{single-threaded}. Isto possibilita que se tenha uma versão funcional para realizar testes de performance o mais cedo possível.
 
 Procurou-se manter a organização do código da versão re-escrita em Rust similar à do original: Os arquivos mantém o mesmo nome mas com a extensão \texttt{.cxx} ou \texttt{.hxx} substituída por \texttt{.rs}. Uma exceção é o arquivo \texttt{smallvcm.cxx}, que foi renomeado para \texttt{main.rs} para seguir a organização padronizada descrita na seção anterior.
 
@@ -403,9 +425,108 @@ No código do SmallVCM existem alumas instâncias de hierarquias de herança de 
 
 Duas dessas hierarquias, de formas geométricas e de fontes luminosas, não possuem campos de dados na classe base e portanto podem ser diretamente convertidos para \emph{traits} a serem implementados por estruturas.
 
-Para realizar a conversão da hierarquia de \texttt{AbstractRenderer}, que possui campos de dados, para Rust, adotou-se a seguinte metodologia: Como a classe base contem campos de dados, é definida uma estrutura \texttt{RendererBase}, contendo estes campos compartilhados e quaisquer funções \emph{não-virtuais} da classe base. É também definido um \emph{trait} \texttt{AbstractRenderer} contendo apenas as declarações das funções \emph{virtuais} e também adicionando duas novas funções: \texttt{base} e \texttt{base\_mut}. O propósito destas duas funções é retornar uma referência ou uma referência única, respectivamente, para uma instância \texttt{RendererBase} contida dentro do objeto, assim permitindo que código no resto do programa consiga pegar uma referência para as funções e dados da ``classe base''. As classes que originalmente derivavam de \texttt{AbstractRenderer} no código \Cpp\ agora incluem um \texttt{RendererBase} como um de seus campos e implementam o \emph{trait} para extender a estrutura/\emph{trait} base. As duas implementações são demonstradas na \todo{LISTAGEM DE CÓDIGO}.
+Para realizar a conversão da hierarquia de \texttt{AbstractRenderer}, que possui campos de dados, para Rust, adotou-se a seguinte metodologia: Como a classe base contem campos de dados, é definida uma estrutura \texttt{RendererBase}, contendo estes campos compartilhados e quaisquer funções \emph{não-virtuais} da classe base. É também definido um \emph{trait} \texttt{AbstractRenderer} contendo apenas as declarações das funções \emph{virtuais} e também adicionando duas novas funções: \texttt{base} e \texttt{base\_mut}. O propósito destas duas funções é retornar uma referência ou uma referência única, respectivamente, para uma instância \texttt{RendererBase} contida dentro do objeto, assim permitindo que código no resto do programa consiga pegar uma referência para as funções e dados da ``classe base''. As classes que originalmente derivavam de \texttt{AbstractRenderer} no código \Cpp\ agora incluem um \texttt{RendererBase} como um de seus campos e implementam o \emph{trait} para extender a estrutura/\emph{trait} base. As duas implementações são demonstradas na figura~\ref{code:inheritance-base}.
 
-O resultado desta conversão resulta num uso um tanto inconveniente do tipo, pois a base precisa ser explicitamente acessada quando se quer utilizar um campo, mas no geral não força nenhuma mudança arquitetural de grande porte neste caso.
+O resultado desta conversão resulta num uso um tanto inconveniente do tipo, pois a base precisa ser explicitamente acessada quando se quer utilizar um campo, mas no geral não forçou nenhuma mudança arquitetural de grande porte.
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[t]{0.48\textwidth}
+\begin{lstlisting}[language=C++]
+class AbstractRenderer {
+public:
+	AbstractRenderer(const Scene& aScene) {
+		// ...
+	}
+
+	virtual ~AbstractRenderer() {}
+	virtual void RunIteration(int aIteration) = 0;
+
+	void GetFramebuffer(Framebuffer& oFramebuffer) { /*...*/ }
+	bool WasUsed() const { return mIterations > 0; }
+
+public:
+	uint mMaxPathLength;
+	uint mMinPathLength;
+
+protected:
+	int mIterations;
+	Framebuffer mFramebuffer;
+	const Scene& mScene;
+};
+\end{lstlisting}
+\begin{lstlisting}[language=C++]
+class EyeLight : public AbstractRenderer {
+public:
+	EyeLight(const Scene& aScene, int aSeed = 1234)
+			: AbstractRenderer(aScene), mRng(aSeed)
+	{}
+
+	virtual void RunIteration(int aIteration) {
+		// ...
+	}
+
+	Rng mRng;
+};
+\end{lstlisting}
+		\caption{\Cpp}
+	\end{subfigure}%
+	~~~
+	\begin{subfigure}[t]{0.48\textwidth}
+\begin{lstlisting}[language=Rust]
+pub trait AbstractRenderer<'a> {
+	fn base<'b>(&'b self) -> &'b RendererBase<'a>;
+	fn base_mut<'b>(&'b mut self) -> &'b mut RendererBase<'a>;
+	fn run_iteration(&mut self, iteration: u32);
+}
+
+pub struct RendererBase<'a> {
+	pub max_path_length: u32,
+	pub min_path_length: u32,
+
+	// originally protected
+	pub iterations: u32,
+	pub framebuffer: Framebuffer,
+	pub scene: &'a Scene,
+}
+
+impl<'a> RendererBase<'a> {
+	pub fn new(scene: &Scene) -> RendererBase {
+		// ...
+	}
+
+	pub fn get_framebuffer(&self) -> Framebuffer { /* ... */ }
+	pub fn was_used(&self) -> bool { self.iterations > 0 }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=Rust]
+pub struct EyeLight<'a> {
+	base: RendererBase<'a>,
+	rng: Rng
+}
+
+impl<'a> EyeLight<'a> {
+	pub fn new(scene: &Scene, seed: u32)
+			-> EyeLight {
+		EyeLight {
+			base: RendererBase::new(scene),
+			rng: SeedableRng::from_seed([0, seed as u64]),
+		}
+	}
+}
+
+impl<'a> AbstractRenderer<'a> for EyeLight<'a> {
+	fn base<'b>(&'b self) -> &'b RendererBase<'a> { &self.base }
+	fn base_mut<'b>(&'b mut self) -> &'b mut RendererBase<'a> { &mut self.base }
+	fn run_iteration(&mut self, iteration: u32) { /* ... */ }
+}
+\end{lstlisting}
+		\caption{Rust}
+	\end{subfigure}
+	\caption{Classe abstrata \texttt{AbstractRenderer} e sua conversão para uma \emph{struct} e \emph{trait}.}
+	\label{code:inheritance-base}
+\end{figure}
 
 \subsection{Sobrecarga de Funções}
 
@@ -418,7 +539,7 @@ O módulo \texttt{math.rs} contém uma biblioteca de tipos matemáticos, consist
 Em Rust a sobrecarga de operadores é feita através da implementação de \emph{traits} especiais. No entanto, este é um procedimento muito mais verboso do que simplesmente declarar funções com um nome especial como é feito em \Cpp. Assim, para evitar uma grande quantidade de duplicação de código, foi usada a funcionalidade de macros de Rust para gerar as implementações dos operadores para \texttt{Vec2} e \texttt{Vec3} sem precisar repetir todas as definições. Parte da definição desta macro e sua correspondente expansão são mostradas na figura~\ref{code:mathmacro}.
 
 \begin{figure}
-\begin{lstlisting}
+\begin{lstlisting}[language=Rust]
 // Definição das macros
 macro_rules! impl_Vector_op(
 	($Trait:ident for $Self:ident { $($field:ident),+ }, $func:ident) => (
@@ -468,22 +589,22 @@ impl_Vector_traits!(Vector3 { x, y, z })
 
 Outra dificuldade foi causada pela falta de conversões automáticas entre tipos. No código original ela era usada para converter escalares para vetores automaticamente, permitindo multiplicações vetor $\times$ escalar e vetor $\times$ vetor necessitando apenas de uma definição da operação de multiplicação. Para contornar isso, foram criadas funções \texttt{vec2s} e \texttt{vec3s} que realizam essa conversão. No entanto, o código usuário precisa chama-las explicitamente.
 
-Uma alternativa seria definir um \emph{trait} \texttt{FromVector}, que poderia ser implementado por tipos escalares e vetores, convertendo os escalares para um vetor, e simplesmente retornaria o próprio vetor caso chamado nele. Esta técnica é utilizada em alguns lugares na biblioteca padrão quando é necessário realizar conversão de uma variedade de tipos diferentes de forma automática.
+Uma alternativa seria definir um \emph{trait} \texttt{FromVector}, que poderia ser implementado por tipos escalares e vetores, convertendo os escalares para um vetor, e simplesmente retornaria o próprio vetor caso chamado nele. As implementações dos operadores seriam então genéricas sobre \texttt{T} que implementa \texttt{FromVector} e chamariam a função de conversão. Esta técnica é utilizada em alguns lugares na biblioteca padrão quando é necessário realizar conversão de uma variedade de tipos diferentes de forma automática.
 
 \subsection{Instabilidade}
 
-Rust ainda está em um período de intenso desenvolvimento e por isso mudanças na definição da linguagem e na implementação do compilador ainda acontecem frequentemente. Foram encontradas várias situações onde uma atualização do compilador, buscando arrumar \emph{bugs} de compilação ou tomar proveito de funções novas da linguagem, necessitou a atualização do código para se adequar a revisões feitas na linguagem.
+Rust ainda está em um período de intenso desenvolvimento e por isso mudanças na definição da linguagem e na implementação do compilador ainda acontecem frequentemente. Foram encontradas várias situações onde uma atualização do compilador, buscando arrumar \emph{bugs} de compilação ou tomar proveito de funções novas da linguagem, necessitou a atualização do código para se adequar a revisões feitas na linguagem ou na biblioteca padrão.
 
 \subsection{\emph{Enums}}
 
-O módulo de configuração (\texttt{config.rs}) faz uso de uma \emph{enum} para selecionar o algoritmo. Em \Cpp, valores de uma enumeração tem um respectivo valor inteiro associado. Rust não associa valores inteiros correspondentes a cada valor da enumeração, pois valores podem ter outros itens de dados associados a eles, sendo análogos a Tipos de Dados Algébricos presentes em Haskell ou Standard ML.  Portanto, algumas técnicas utilizadas pelo código original, como iterar através dos possíveis valores numéricos das enumerações ou as utilizar como índice em um vetor, não são possíveis aqui. Estes usos são substituídos por usos da expressão \texttt{match}, que por requerer a menção dos nomes dos itens da enumeração é mais repetitiva, mas também mais clara. Uma comparação entre os dois tipos de código pode ser vista na figura~\ref{code:enums}. Nota-se que os testes para verificar se o valor está dentro do intervalo esperado não são necessários em Rust, pois a linguagem não permite a atribuição de valores não presentes na enumeração a variáveis desse tipo.
+O módulo de configuração (\texttt{config.rs}) faz uso de uma \emph{enum} para selecionar o algoritmo. Em \Cpp, valores de uma enumeração tem um respectivo valor inteiro associado. Rust não associa valores inteiros correspondentes a cada valor da enumeração, pois valores podem ter outros itens de dados associados a eles, sendo análogos a Tipos de Dados Algébricos presentes em Haskell ou Standard ML.  Portanto, algumas técnicas utilizadas pelo código original, como iterar através dos possíveis valores numéricos das enumerações ou as utilizar como índice em um vetor, não são possíveis aqui. Estes usos são substituídos por usos da expressão \texttt{match}, que por requerer a menção dos nomes dos itens da enumeração é mais repetitiva, mas também mais clara e robusta, pois os itens da enumeração não correm risco de sair fora de sincronia com os índices do vetor. Uma comparação entre os dois tipos de código pode ser vista na figura~\ref{code:enums}. Nota-se que os testes para verificar se o valor está dentro do intervalo esperado não são necessários em Rust, pois a linguagem não permite a atribuição de valores não presentes na enumeração a variáveis desse tipo.
 
 Esta funcionalidade também foi utilizada de maneira vantajosa, substituindo um par de variáveis de configuração que determinava a condição de parada do algoritmo, dos quais apenas uma poderia estar ativa de cada vez, por uma \emph{enum} de duas variantes, cada uma contendo seu respectivo parâmetro. Esta mudança evita que o sistema acidentalmente seja colocado em um estado inválido, e também remove ambiguidade na hora de testar pela condição.
 
 \begin{figure}
 	\centering
-	\begin{minipage}[t]{0.48\textwidth}
-\begin{lstlisting}
+	\begin{subfigure}[t]{0.48\textwidth}
+\begin{lstlisting}[language=C++]
 enum Algorithm {
 	kEyeLight,
 	kPathTracing,
@@ -521,10 +642,11 @@ static const char* GetAcronym(Algorithm aAlgorithm) {
 	return algorithmNames[aAlgorithm];
 }
 \end{lstlisting}
-	\end{minipage}
-	~
-	\begin{minipage}[t]{0.48\textwidth}
-\begin{lstlisting}
+		\caption{\Cpp}
+	\end{subfigure}%
+	~~~
+	\begin{subfigure}[t]{0.48\textwidth}
+\begin{lstlisting}[language=Rust]
 enum Algorithm {
 	EyeLight,
 	PathTracing,
@@ -561,8 +683,8 @@ impl Algorithm {
 	}
 }
 \end{lstlisting}
-	\end{minipage}
-	\todo{sub-captions}
+		\caption{Rust}
+	\end{subfigure}
 	\caption{Comparação entre \emph{enums} em C++ e Rust}
 	\label{code:enums}
 \end{figure}
@@ -575,21 +697,21 @@ O código original inicializava alguns ponteiros para nulo. Em sua maioria estes
 
 \subsection{Biblioteca padrão}
 
-É necessário de um gerador de números pseudo-aleatórios para o cálculo da integração por monte carlo. O SmallVCM original utilizava o popular \emph{MT19937}, uma versão do algoritmo \emph{Mersenne Twister} \citep{matsumoto1998}, presente na biblioteca padrão \Cpp. Como este gerador não estava presente na biblioteca padrão da Rust, foi optado implementar o algoritmo \emph{xorshift128+} \citep{vigna2014} devido a seu bom desempenho, boa qualidade de resultados e pequena implementação quando comparado ao \emph{Mersenne Twister}. O algoritmo também foi posteriormente implementado em \Cpp\ para que ambos possuíssem as mesmas características para fins de comparação.
+É necessário de um gerador de números pseudo-aleatórios para o cálculo da integração por monte carlo. O SmallVCM original utilizava o popular \emph{MT19937}  \citep{matsumoto1998}, presente na biblioteca padrão \Cpp. Como este gerador não estava presente na biblioteca padrão da Rust, foi optado implementar o algoritmo \emph{xorshift128+} \citep{vigna2014} devido a seu bom desempenho, boa qualidade de resultados e pequena implementação quando comparado ao \emph{MT19937}. O algoritmo também foi posteriormente implementado em \Cpp\ para que ambos possuíssem as mesmas características para fins de comparação.
 
 Para a leitura de parâmetros passado via linha de comando, foi utilizado o módulo \texttt{getopts}, presente na biblioteca padrão. Na versão \Cpp\ a leitura é feita de forma manual.
 
 \chapter{Resultados}
 
-Este capítulo descreve os testes comparativos de realizados entre o SmallVCM e sua \emph{port} para Rust, SmallVCM-rs.
+Ao fim do trabalho, havia sido portado para Rust código suficiente do SmallVCM para executar o algoritmo \texttt{EyeLight}. Funções que não eram necessárias para este caminho de execução não foram definidas ou foram definidas como \emph{placeholders} que abortam o programa quando executadas, assim certificando que não são chamadas durante o teste. Não foram feitas mudanças algorítmicas, mas detalhes da implementação foram ajustados a medida que isto era requirido pela linguagem, como descrito no capítulo anterior, ou para produzir código mais idiomático se isto pudesse ser feito sem re-estruturações significativas da estrutura do programa.
 
-\section{Desempenho}
+\section{Testes de Desempenho}
 
-A fim de averiguar se pode se esperar uma perda de performance quando se implementa um algoritmo em Rust comparado a um equivalente em \Cpp, foram feitas medidas do tempo de execução da mesma tarefa nas duas implementações.
+A fim de averiguar se pode se esperar uma diferença de performance quando se implementa um algoritmo em Rust comparado a um equivalente em \Cpp, foram feitas medidas do tempo de execução da mesma tarefa nas duas implementações.
 
 Foi feita uma tentativa de se utilizar o compilador clang, que, assim como o rustc, utiliza o LLVM como \emph{back-end} de otimização e geração de código, a fim de eliminar esta diferença e tornar as comparações com a versão escrita em Rust mais diretamente aplicáveis. Para isso, foi necessário remover o suporte a OpenMP do programa, pois a tecnologia não é bem suportada pelo clang. Esta modificação necessitou de poucas mudanças, bastando a remoção de algumas diretivas \texttt{\#include} e \texttt{\#pragma omp} e chamadas de inicialização do OpenMP.\footnote{Esta versão, também incluindo a implementação do PRNG \emph{xorshift128+}, pode ser encontrada em \url{https://github.com/yuriks/SmallVCM/tree/xorshift}.} Após estas modificações o programa pôde ser compilado e executado com sucesso, mas sua execução mostrou-se demorada, com o clang gerando código muito menos eficiente que o gcc e rustc, resultando em uma diferença de aproximadamente 300\% no tempo de execução. Como Rust, assim como clang, também utiliza o LLVM para sua geração de código, eram esperados resultados similares. Investigações realizadas com desenvolvedores do LLVM em seu canal IRC indicaram que seria vantajoso tentar a última versão de desenvolvimento (\emph{Head of Tree}) do clang, que havia recebido melhoras na geração de código em áreas relevantes ao programa. Fazendo uso da versão de desenvolvimento, constatou-se que ambos compiladores agora geravam código com desempenho similar.
 
-Todas as medições foram realizadas num computador com a seguinte configuração de hardware: CPU Intel i5-4670K 3.4 GHz Quad-core, 16 GB de RAM e disco Samsung 840 Pro 256 GB. O SO utilizado foi Arch Linux, arquitetura \texttt{x86\_64}, rodando dentro de um máquina virtual VirtualBox com 3GB de RAM, 4 cores e 40 GB de disco, com Windows 8.1 como SO \emph{host}. As versões dos compiladores utilizadas foram: gcc 4.9.2, clang SVN \texttt{222777}, rustc Git \texttt{81eeec094}. As opções de compilação utilizadas foram: \texttt{-O2 -std=c++11} (gcc), \texttt{-O2 -std=c++11 -stdlib=libc++ -lc++abi} (clang) e \texttt{-{}-opt-level 3} (rustc). Para a versão \emph{multi-threaded} no compilador gcc, foi também adicionada a opção \texttt{-fopenmp} para habilitar o suporte a OpenMP.
+Todas as medições foram realizadas num computador com a seguinte configuração de hardware: CPU Intel i5-4670K 3.4 GHz Quad-core, 16 GB de RAM e disco Samsung 840 Pro 256 GB. O SO utilizado foi Arch Linux, arquitetura \texttt{x86\_64}, rodando dentro de um máquina virtual VirtualBox com 3GB de RAM, 4 cores e 40 GB de disco, com Windows 8.1 como SO \emph{host}. As versões dos compiladores utilizadas foram: gcc 4.9.2, clang SVN \texttt{222777}, rustc Git \texttt{81eeec094}. As opções de compilação utilizadas foram: \texttt{-O3 -std=c++11} (gcc), \texttt{-O3 -std=c++11 -stdlib=libc++ -lc++abi} (clang) e \texttt{-{}-opt-level 3} (rustc). Para a versão \emph{multi-threaded} no compilador gcc, foi também adicionada a opção \texttt{-fopenmp} para habilitar o suporte a OpenMP.
 
 Para medir o tempo de execução do algoritmo, foi utilizada a ferramenta \texttt{perf stat}. Passando-se a opção \texttt{-r} a ferramenta irá repetir o teste várias vezes, reportando a média dos dados coletados. Esta função foi utilizada com 10 repetições em cada teste. A invocação do SmallVCM foi feita com as opções \texttt{-a el -i 100} no teste \emph{single-threaded} e \texttt{-a el -i 400} no teste \emph{multi-threaded}. Os resultados obtidos estão dispostos na tabela~\ref{tab:vcm-timings}.
 
@@ -608,18 +730,7 @@ Os tempos e as diferenças entre eles são consistentes através de várias exec
 
 \chapter{Conclusão}
 
-
-
-\chapter{Próximas Etapas}
-
-\todo{Como continuação do trabalho realizado até o momento, são planejadas as seguintes atividades:}
-
-\begin{enumerate}
-	\item Continuar a re-escrita em andamento do SmallVCM, afim de que esta tenha funcionalidade o suficiente para gerar imagens usando pelo menos um tipo de algoritmo.
-	\item Paralelizar o código do renderizador, explorando diferentes alternativas para atingir este fim.
-	\item Realizar testes comparativos para determinar o desempenho relativo entre duas versões, como parte do objetivo de determinar se a linguagem Rust é compatível com este tipo de aplicação.
-	\item Trazer o resto dos algoritmos de renderização do SmallVCM à versão em Rust, para que ambos tenham o mesmo conjunto de funções.
-\end{enumerate}
+\todo{TODO}
 
 \setlength{\baselineskip}{\baselineskip}
 \bibliographystyle{abnt}
