@@ -41,6 +41,7 @@
 %\usepackage{booktabs} % for much better looking tables
 %\usepackage{array} % for better arrays (eg matrices) in maths
 %\usepackage{paralist} % very flexible & customisable lists (eg. enumerate/itemize, etc.)
+\usepackage{siunitx}
 \usepackage{verbatim} % adds environment for commenting out blocks of text & for better verbatim
 \usepackage{listings}
 \usepackage{parcolumns}
@@ -115,7 +116,7 @@ A Computação Gráfica, e especificamente a geração de imagens por computador
 inúmeras aplicações. No entanto, para a geração de imagens realísticas, é essencial fazer
 uso eficiente do poder computacional disponível, pois é um processo que requer a realização
 de um grande número de cálculos. Tradicionalmente foram utilizadas linguagens como \Cpp, que
-permitem esta eficiência, para escrever estes tipos de sistemas. \emph{Rust}, uma nova
+permitem esta eficiência, para escrever estes tipos de sistemas. Rust, uma nova
 linguagem de sistemas, tem como um dos seus objetivos servir este nicho de aplicação. Este
 trabalho tem como objetivo re-implementar um renderizador fotorrealista utilizando Rust,
 afim de avaliar se a linguagem realmente atende as necessidades deste tipo de aplicação.
@@ -164,7 +165,7 @@ Tendo em vista a baixa expressividade de \Cpp\ comparada a estas outras linguage
 interessante explorar alternativas que permitam desenvolvimento mais fácil sem sacrificar o
 desempenho requerido.
 
-A linguagem de programação \emph{Rust}, \todo{REF} um projeto de pesquisa da \emph{Mozilla Research}, tem como
+A linguagem de programação Rust, \todo{REF} um projeto de pesquisa da \emph{Mozilla Research}, tem como
 seu objetivo ser uma união entre linguagens de programação de sistemas e as tidas como ``linguagens
 de alto-nível'', focando simultaneamente em alto-desempenho, segurança e expressividade. Ela atinge
 isso usando um modelo tradicional de compilação prévia (\emph{ahead of time}), gerando código nativo,
@@ -178,7 +179,7 @@ que aumentam sua expressividade e capacidade de facilmente descrever programas c
 
 \subsection{Objetivo Geral}
 
-O objetivo geral deste trabalho é portar um \emph{path tracer} para a linguagem \emph{Rust} e, através deste processo,
+O objetivo geral deste trabalho é portar um \emph{path tracer} para a linguagem Rust e, através deste processo,
 realizar uma comparação quantitativa e qualitativa entre as versões escritas nesta linguagem e \Cpp, nos aspectos de
 desempenho e organização de código, respectivamente. Como base será utilizado o SmallVCM \citep{smallvcm}, um
 \emph{path tracer} de pesquisa escrito em \Cpp, escolhido por implementar uma variedade
@@ -206,7 +207,7 @@ deste trabalho podem ajudar a guiar o desenvolvimento da linguagem para atingir 
 
 \chapter{Fundamentos e Revisão de Literatura}
 
-Neste capítulo é dada uma descrição dos conceitos teóricos das áreas de Linguagens de Programação e de Computação Gráfica nas quais o trabalho e as ferramentas nele utilizadas, a linguagem de programação \emph{Rust} e o algoritmo de \emph{path tracing}, se baseiam.
+Neste capítulo é dada uma descrição dos conceitos teóricos das áreas de Linguagens de Programação e de Computação Gráfica nas quais o trabalho e as ferramentas nele utilizadas, a linguagem de programação Rust e o algoritmo de \emph{path tracing}, se baseiam.
 
 \section{Rust}
 
@@ -232,7 +233,7 @@ Haskell ou de \emph{interfaces} em outras linguagens) que evita alguns problemas
 em herança de classes, como a falta de extensibilidade de tipos e o \emph{problema diamante} em
 herança múltipla \citep{scharli2003}.
 
-O compilador oficial da linguagem, o \emph{rustc}, é implementado na própria linguagem e utiliza a
+O compilador oficial da linguagem, o rustc, é implementado na própria linguagem e utiliza a
 infraestrutura do projeto LLVM \citep{lattner2004}, permitindo que usufrua das capacidades de
 otimização e geração de código do projeto para alcançar uma variedade de plataformas. O compilador
 também tem suporte ao carregamento de \emph{plugins} durante o processo de análise, o que expõe
@@ -245,7 +246,7 @@ aplicações embarcadas em microprocessadores.
 
 Para criar uma linguagem segura, eficiente e sem \emph{runtime}, é necessário assegurar-se que todas os ponteiros, ou referências, no programa sejam válidas quando são acessadas. Para que isto seja possível sem incidir um custo na execução, esta é uma tarefa que precisa ser feita durante a compilação do programa, e não durante sua execução, como é feito em muitas linguagens onde todos os acessos de ponteiro são testados por validez antes de serem executados.
 
-\emph{Rust} modela esta restrição fazendo uma análise dos objetos (Tipos básicos, estruturas, referências, etc.) que tem sua vida delimitada por escopos léxicos no programa. É permitido que uma variável seja usada em escopos dentro do qual ela foi definida, e quaisquer referências criadas a esta variável tem seu tipo associado ao escopo, de forma a proibir que estas escapem para um escopo superior (onde elas não seriam mais necessariamente válidas, pois a variável teria sido destruída no fim do seu respectivo escopo.) A região na qual uma variável é válida e referências a ela podem existir é chamada de sua \emph{lifetime}.
+Rust modela esta restrição fazendo uma análise dos objetos (Tipos básicos, estruturas, referências, etc.) que tem sua vida delimitada por escopos léxicos no programa. É permitido que uma variável seja usada em escopos dentro do qual ela foi definida, e quaisquer referências criadas a esta variável tem seu tipo associado ao escopo, de forma a proibir que estas escapem para um escopo superior (onde elas não seriam mais necessariamente válidas, pois a variável teria sido destruída no fim do seu respectivo escopo.) A região na qual uma variável é válida e referências a ela podem existir é chamada de sua \emph{lifetime}.
 
 Para suportar a mobilidade de valores para escopos mais externos, variáveis também podem ser movidas. Mover uma variável (para outra variável, para dentro de uma chamada de função ou retornando-a para fora de uma função) invalida a variável original que continha o objeto. O compilador proíbe acessos a esta variável após ela ter sido movida, pois seus conteúdos não são mais válidos. Por esta mesma razão, é proibido mover uma variável para a qual existam referências, que seriam invalidadas se isto acontecesse. Por isso, o ato de criar uma referência a partir de uma variável é chamado ``\emph{borrow}''. (``emprestar'') O direito de vida da variável é compartilhado com a referência, enquanto esta existir.
 
@@ -257,7 +258,7 @@ Existem situações em que esta restrição de referências baseada no escopo l�
 
 \subsection{Prevenção de \emph{Aliasing}}
 
-Para facilitar a análise do comportamento de um programa pelo usuário, \emph{Rust} também impõe restrições quanto a mutabilidade de referências a objetos. Referências \emph{únicas} ou \emph{mutáveis} permitem a modificação do objeto a que apontam, mas restringem qualquer acesso a ele sem ser pela referência enquanto estiver emprestado. Referências \emph{compartilhadas} ou \emph{imutáveis} restringem a modificação do objeto para a qual apontam, mas permitem a existência de várias delas apontando para o mesmo. Isto garante que, se uma função receber uma referência compartilhada, o objeto a qual ela aponta nunca sera modificado durante a duração da função, não precisando o programador ou o compilador preocupar-se com efeitos colaterais de operações em outros objetos. Da mesma forma, se uma função receber uma função única, poderá modificá-la sem se preocupar que isto irá interferir com outros objetos ou referências presentes dentro da função. \citep{rust-lifetimes}
+Para facilitar a análise do comportamento de um programa pelo usuário, Rust também impõe restrições quanto a mutabilidade de referências a objetos. Referências \emph{únicas} ou \emph{mutáveis} permitem a modificação do objeto a que apontam, mas restringem qualquer acesso a ele sem ser pela referência enquanto estiver emprestado. Referências \emph{compartilhadas} ou \emph{imutáveis} restringem a modificação do objeto para a qual apontam, mas permitem a existência de várias delas apontando para o mesmo. Isto garante que, se uma função receber uma referência compartilhada, o objeto a qual ela aponta nunca sera modificado durante a duração da função, não precisando o programador ou o compilador preocupar-se com efeitos colaterais de operações em outros objetos. Da mesma forma, se uma função receber uma função única, poderá modificá-la sem se preocupar que isto irá interferir com outros objetos ou referências presentes dentro da função. \citep{rust-lifetimes}
 
 Esta garantia de que valores só podem ser modificados através de um único ponto por vez também automaticamente assegura que não existam erros de sincronização em programas concorrentes. Dados compartilhado por vários \emph{threads} o serão exclusivamente através de referências compartilhadas, com a garantia de que não serão modificados, e assim não precisam de exclusão mútua para evitar condições de corrida. Por outro lado, se um \emph{thread} possuir possuir uma referência única, sabe que este dado não pode ser lido em nenhum outro lugar, também evitando a necessidade de sincronismo.
 
@@ -265,7 +266,7 @@ Esta garantia de que valores só podem ser modificados através de um único pon
 
 \subsection{\emph{Traits}}
 
-O projeto de \emph{Rust} considera importante o suporte a programação genérica sobre tipos polimór suporta o conceito de herança de classes. No entanto, ainda é essencial suportar o uso polimórfico de objetos. Este suporte é fornecido através do conceito de \emph{traits}. Um \emph{trait} é similar a uma \emph{interface}, conceito presente em várias linguagens orientadas a objeto\todo{[REF]?}: um tipo que consiste apenas de declarações de funções, sem campos de dados ou implementação, e que forma um contrato para a interação entre dois componentes do código. Estas funções devem ser posteriormente implementadas por um tipos concretos, de acordo com o contrato estabelecido, permitindo que estes tipos sejam usados de forma genérica através da interface. Um dado tipo pode implementar mais de uma interface, permitindo expor vários conjuntos de funcionalidade distintos. \todo {exemplo}
+O projeto de Rust considera importante o suporte a programação genérica sobre tipos polimór suporta o conceito de herança de classes. No entanto, ainda é essencial suportar o uso polimórfico de objetos. Este suporte é fornecido através do conceito de \emph{traits}. Um \emph{trait} é similar a uma \emph{interface}, conceito presente em várias linguagens orientadas a objeto\todo{[REF]?}: um tipo que consiste apenas de declarações de funções, sem campos de dados ou implementação, e que forma um contrato para a interação entre dois componentes do código. Estas funções devem ser posteriormente implementadas por um tipos concretos, de acordo com o contrato estabelecido, permitindo que estes tipos sejam usados de forma genérica através da interface. Um dado tipo pode implementar mais de uma interface, permitindo expor vários conjuntos de funcionalidade distintos. \citep{rust-guide} \todo {exemplo}
 
 Uma vantagem de \emph{traits} sobre o modelo de herança tradicional é que se evita a ambiguidade presente em casos onde duas superclasses em de um tipo herdam de um mesmo tipo compartilhado. Isto cria uma ambiguidade onde cada classe pode conter dentro de sí uma instância separada dos campos das classes pai ou onde ambas compartilham os mesmos campos. Esta situação é chamada de ``problema diamante'', devido a estrutura do grafo de herança resultante. Por esta razão, muitas linguagens restringem seu suporte à herança simples, permitindo que classes herdem de somente uma superclasse. \todo{diagrama}
 
@@ -336,42 +337,42 @@ algoritmo foi depois reformulado em \citep{veach1997}, onde também foi introduz
 
 \section{SmallVCM}
 
-\emph{SmallVCM} \citep{smallvcm} é um renderizador de imagens, baseado em algoritmos de \emph{ray tracing} e \emph{path tracing}, desenvolvido pelo autor para servir como uma implementação de exemplo de seu algoritmo \emph{Vertex Connection and Merging} \citep{georgiev2012}. Além deste algoritmo, o programa também implementa uma variedade de outros incluindo \emph{path tracing}, \emph{light tracing}, \emph{bidirectional path tracing} e \emph{photon mapping}. \todo{Ref. para photon mapping.} Por ter propósito de educar sobre os algoritmos, não possui funcionalidades avançadas como animação e é limitado a renderizar um pequeno conjunto de cenas de exemplo incluídas no programa. Uma imagem gerada com o programa, utilizando o algoritmo de \emph{vertex connection and merging}, pode ser vista na figura \ref{fig:smallvcm_img}. O programa também possui uma função que gera um relatório que compara a performance relativa de cada algoritmo.
+SmallVCM \citep{smallvcm} é um renderizador de imagens, baseado em algoritmos de \emph{ray tracing} e \emph{path tracing}, desenvolvido pelo autor para servir como uma implementação de exemplo de seu algoritmo \emph{Vertex Connection and Merging} \citep{georgiev2012}. Além deste algoritmo, o programa também implementa uma variedade de outros incluindo \emph{path tracing}, \emph{light tracing}, \emph{bidirectional path tracing} e \emph{photon mapping}. \todo{Ref. para photon mapping.} Por ter propósito de educar sobre os algoritmos, não possui funcionalidades avançadas como animação e é limitado a renderizar um pequeno conjunto de cenas de exemplo incluídas no programa. Uma imagem gerada com o programa, utilizando o algoritmo de \emph{vertex connection and merging}, pode ser vista na figura~\ref{fig:smallvcm_img}. O programa também possui uma função que gera um relatório que compara a performance relativa de cada algoritmo.
 
 \begin{figure}
 	\centering
 	\includegraphics[width=0.5\textwidth]{ggbs_s_vcm}
 	\caption{
-		Uma imagem gerada pelo \emph{SmallVCM}.
+		Uma imagem gerada pelo SmallVCM.
 	}
 	\label{fig:smallvcm_img}
 \end{figure}
 
-Escrito em \Cpp, o \emph{SmallVCM} segue uma estrutura de projeto claramente organizada. A partir das opções passadas na linha de comando, é criada uma cena, utilizando um dos modelos disponíveis, e um renderizador, dos quais existem várias implementações para os vários algoritmos. Todos os renderizadores utilizam uma infra-estrutura de comum de tipos representando os objetos, fontes luminosas e materiais da cena. Os resultados intermediários da renderização são acumulados em um \texttt{Framebuffer} e subsequentemente salvos para um arquivo após um terem sido executadas um número especificado de iterações ou de certo tempo de execução.
+Escrito em \Cpp, o SmallVCM segue uma estrutura de projeto claramente organizada. A partir das opções passadas na linha de comando, é criada uma cena, utilizando um dos modelos disponíveis, e um renderizador, dos quais existem várias implementações para os vários algoritmos. Todos os renderizadores utilizam uma infra-estrutura de comum de tipos representando os objetos, fontes luminosas e materiais da cena. Os resultados intermediários da renderização são acumulados em um \texttt{Framebuffer} e subsequentemente salvos para um arquivo após um terem sido executadas um número especificado de iterações ou de certo tempo de execução.
 
 \todo{Diagrama das classes/módulos.}
 
 \subsection{Paralelização}
 
-Existe suporte à paralelização do processo de renderização. Este é implementado utilizando diretivas \emph{OpenMP} \citep{openmp40}, uma API multi-plataforma para computação paralela. A \emph{OpenMP} permite a paralelização de código através da inserção de diretivas \text{\#pragma omp} em programas \Cpp, que são reconhecidas pelo compilador (portando requerendo suporte específico por parte deste) e automaticamente transformadas em código paralelo. Assim, uma aplicação existente pode ser mais facilmente convertida para um programa paralelo, sem depender de APIs de algum SO específico e sem precisar de grandes re-estruturações do programa nos casos mais simples.
+Existe suporte à paralelização do processo de renderização. Este é implementado utilizando diretivas OpenMP \citep{openmp40}, uma API multi-plataforma para computação paralela. A OpenMP permite a paralelização de código através da inserção de diretivas \text{\#pragma omp} em programas \Cpp, que são reconhecidas pelo compilador (portando requerendo suporte específico por parte deste) e automaticamente transformadas em código paralelo. Assim, uma aplicação existente pode ser mais facilmente convertida para um programa paralelo, sem depender de APIs de algum SO específico e sem precisar de grandes re-estruturações do programa nos casos mais simples.
 
-No \emph{SmallVCM} a paralelização é efetuada construindo-se várias instâncias do renderizador, uma por \emph{thread}. Como cada iteração dos algoritmos de \emph{path tracing} é independente da outra, estas podem ser executadas em paralelo. Assim, pode-se atingir um determinado número de iterações em menos tempo, sem necessitar modificar os algoritmos em sí.
+No SmallVCM a paralelização é efetuada construindo-se várias instâncias do renderizador, uma por \emph{thread}. Como cada iteração dos algoritmos de \emph{path tracing} é independente da outra, estas podem ser executadas em paralelo. Assim, pode-se atingir um determinado número de iterações em menos tempo, sem necessitar modificar os algoritmos em sí.
 
 \chapter{Desenvolvimento}
 
-Aqui são descritas as atividades realizadas para atingir os objetivos propostos. É dada uma explicação da organização do ambiente de compilação e desenvolvimento utilizadas nas versões do \emph{SmallVCM}. (A original e a re-escrita em \emph{Rust}, denominada \emph{SmallVCM-rs}.) Seguindo, é feita uma descrição da organização de código do \emph{SmallVCM}, e quais foram algumas diferenças marcantes encontradas entre as linguagens de como a implementação de seus componentes mudou no código \emph{Rust} por influência de diferenças entre essa linguagem e \Cpp.
+Aqui são descritas as atividades realizadas para atingir os objetivos propostos. É dada uma explicação da organização do ambiente de compilação e desenvolvimento utilizadas nas versões do SmallVCM. (A original e a re-escrita em Rust, denominada SmallVCM-rs.) Seguindo, é feita uma descrição da organização de código do SmallVCM, e quais foram algumas diferenças marcantes encontradas entre as linguagens de como a implementação de seus componentes mudou no código Rust por influência de diferenças entre essa linguagem e \Cpp.
 
 \section{Ambiente de Desenvolvimento e Organização de Projeto}
 
 \subsection{Rust}
 
-O compilador \emph{rustc}, além de ser oficialmente distribuído em forma de código fonte, também é disponibilizado através de pacotes binários distribuídos na página do projeto\footnote{\url{http://www.rust-lang.org/install.html}}. Estes pacotes evitam que usuários passem pelo processo de \emph{bootstrap} do compilador, que pode levar mais de uma hora, dependendo do hardware em que é executado. Atualizados diariamente, os pacotes binários são providos para os sistemas operacionais Linux, Mac OS X e Windows, em versões 32-bits ou 64-bits. Ocasionalmente são também feitas versões numeradas do compilador, porém o uso destas não é recomendado pela comunidade pois rapidamente ficam defasadas, um problema se pretende-se utilizar qualquer biblioteca de terceiros ou consultar a documentação online.
+O compilador rustc, além de ser oficialmente distribuído em forma de código fonte, também é disponibilizado através de pacotes binários distribuídos na página do projeto\footnote{\url{http://www.rust-lang.org/install.html}}. Estes pacotes evitam que usuários passem pelo processo de \emph{bootstrap} do compilador, que pode levar mais de uma hora, dependendo do hardware em que é executado. Atualizados diariamente, os pacotes binários são providos para os sistemas operacionais Linux, Mac OS X e Windows, em versões 32-bits ou 64-bits. Ocasionalmente são também feitas versões numeradas do compilador, porém o uso destas não é recomendado pela comunidade pois rapidamente ficam defasadas, um problema se pretende-se utilizar qualquer biblioteca de terceiros ou consultar a documentação online.
 
 Para o desenvolvimento, foi utilizada uma máquina virtual contendo o sistema operacional \emph{Arch Linux}. Além de conter software atualizado, existem pacotes de terceiros para a distribuição que automaticamente instalam versões atualizadas do compilador de Rust.\footnote{\url{https://aur.archlinux.org/packages/rust-nightly-bin/}} Como a linguagem ainda está em fase de mudança frequente, poder atualizar o compilador facilmente é importante para se manter atualizado com as últimas mudanças e funcionalidades incluídas diariamente na linguagem.
 
-Além do compilador, também é utilizado o gerenciador de pacotes oficial \emph{Cargo}\footnote{\url{http://crates.io/}}, \todo{falar mais sobre Cargo} desenvolvido especificamente para gerenciar e compilar bibliotecas \emph{Rust}. Assim como o compilador, também existem pacotes \emph{Arch Linux} para manter este atualizado\footnote{\url{https://aur.archlinux.org/packages/cargo-nightly-bin/}}.
+Além do compilador, também é utilizado o gerenciador de pacotes oficial \emph{Cargo}\footnote{\url{http://crates.io/}}, \todo{falar mais sobre Cargo} desenvolvido especificamente para gerenciar e compilar bibliotecas Rust. Assim como o compilador, também existem pacotes \emph{Arch Linux} para manter este atualizado\footnote{\url{https://aur.archlinux.org/packages/cargo-nightly-bin/}}.
 
-Seguindo sua estrutura recomendada de projeto, é possível utilizar o \emph{Cargo} para gerenciar a compilação, com o comando \texttt{cargo build}, evitando a necessidade de um \emph{Makefile}. Para fazer uso desta funcionalidade, é necessário colocar todo o código fonte dentro de um subdiretório \texttt{src/}. O ponto de partida do compilador para fazer a descoberta de todo o código fonte deve ser em um arquivo chamado \texttt{main.rs} (para projetos executáveis) ou \texttt{lib.rs} (para bibliotecas). Fora deste diretório, deve ser criado um arquivo \texttt{Cargo.toml}, que contém metadados sobre o projeto e bibliotecas utilizadas. Esta estrutura de projeto padronizada facilita a familiarização de programadores com outros projetos \emph{Rust}, já que não é necessário se adaptar a um sistema de compilação único a cada projeto.
+Seguindo sua estrutura recomendada de projeto, é possível utilizar o \emph{Cargo} para gerenciar a compilação, com o comando \texttt{cargo build}, evitando a necessidade de um \emph{Makefile}. Para fazer uso desta funcionalidade, é necessário colocar todo o código fonte dentro de um subdiretório \texttt{src/}. O ponto de partida do compilador para fazer a descoberta de todo o código fonte deve ser em um arquivo chamado \texttt{main.rs} (para projetos executáveis) ou \texttt{lib.rs} (para bibliotecas). Fora deste diretório, deve ser criado um arquivo \texttt{Cargo.toml}, que contém metadados sobre o projeto e bibliotecas utilizadas. Esta estrutura de projeto padronizada facilita a familiarização de programadores com outros projetos Rust, já que não é necessário se adaptar a um sistema de compilação único a cada projeto.
 
 Além das tarefas básicas de um sistema de compilação, o sistema também encarrega-se de automaticamente fazer o download e instalação de quaisquer bibliotecas externas utilizadas. Neste trabalho são utilizadas as bibliotecas \emph{time} (Biblioteca oficial para utilizar as funções de relógio do sistema operacional.) e \emph{rayon}. (Fornece uma primitiva simples para paralelização de tarefas.) Para inclusão de uma biblioteca externa, basta incluir a URL de um repositório \emph{Git} no arquivo \texttt{Cargo.toml}, e ela será automaticamente baixada e compilada antes da compilação do programa.
 
@@ -379,27 +380,25 @@ Para realizar o controle de mudanças foi utilizado o \emph{Git}\footnote{O repo
 
 \subsection{C++}
 
-O \emph{SmallVCM} original, sendo escrito em \Cpp\ precisa de um compilador para esta linguagem. Inicialmente o sistema de compilação vem configurado para utilizar-se o compilador \emph{gcc}. O processo de compilação do programa é bastante simples, bastando executar \texttt{make} para compilar o binário. Não foram necessárias nenhumas modificações a versão distribuída do código.
-
-Foi feita uma tentativa de se utilizar o compilador \emph{clang}, que, assim como o \emph{rustc}, utiliza o \emph{LLVM} como \emph{back-end} de otimização e geração de código, a fim de tornar as comparações com a versão escrita em \emph{Rust} mais diretamente aplicáveis. Para isso, foi necessário remover o suporte a \emph{OpenMP} \todo{Cita e explicar openmp na rev. bib.} do programa, pois a tecnologia não é bem suportada pelo compilador. Esta modificação necessitou de poucas mudanças, bastando a remoção de algumas diretivas \texttt{\#include} e \texttt{\#pragma omp} e chamadas de inicialização do \emph{OpenMP}.\footnote{Esta versão pode ser encontrada em \url{https://github.com/yuriks/SmallVCM/tree/no-openmp}} Após estas modificações o programa pôde ser compilado e executado com sucesso, mas sua execução mostrou-se demorada, com o \emph{clang} gerando código menos eficiente que o \emph{gcc}. Como \emph{Rust}, assim como \emph{clang}, também utiliza o \emph{LLVM} para sua geração de código, eram esperados resultados similares, porém a versão compilada pelo \emph{clang} obteve performance muito abaixo das versões compiladas pelo \emph{gcc} e \emph{rustc}. Investigações realizadas com desenvolvedores do \emph{LLVM} em seu canal IRC indicaram que seria vantajoso tentar a última versão de desenvolvimento (\emph{Head of Tree}) do \emph{clang}, que havia recebido melhoras na geração de código em áreas relevantes ao programa. Fazendo uso da versão de desenvolvimento, constatou-se que ambos compiladores agora geravam código com desempenho similar.
+O SmallVCM original, sendo escrito em \Cpp\ precisa de um compilador para esta linguagem. Inicialmente o sistema de compilação vem configurado para utilizar-se o compilador gcc. O processo de compilação do programa é bastante simples, bastando executar \texttt{make} para compilar o binário. Não foram necessárias nenhumas modificações a versão distribuída do código.
 
 \section{Metodologia da \emph{Port}}
 
-Estabeleceu-se um objetivo inicial de converter para \emph{Rust} o conjunto de código necessário para renderizar uma imagem utilizando o algoritmo básico \emph{EyeLight}, que calcula apenas a incidência de luz direta de um fonte luminosa posicionada no observador, em modo \emph{single-threaded}. Isto possibilita que se tenha uma versão funcional para realizar testes de performance o mais cedo possível.
+Estabeleceu-se um objetivo inicial de converter para Rust o conjunto de código necessário para renderizar uma imagem utilizando o algoritmo básico \emph{EyeLight}, que calcula apenas a incidência de luz direta de um fonte luminosa posicionada no observador, em modo \emph{single-threaded}. Isto possibilita que se tenha uma versão funcional para realizar testes de performance o mais cedo possível.
 
-Procurou-se manter a organização do código da versão re-escrita em \emph{Rust} similar à do original: Os arquivos mantém o mesmo nome mas com a extensão \texttt{.cxx} ou \texttt{.hxx} substituída por \texttt{.rs}. Uma exceção é o arquivo \texttt{smallvcm.cxx}, que foi renomeado para \texttt{main.rs} para seguir a organização padronizada descrita na seção anterior.
+Procurou-se manter a organização do código da versão re-escrita em Rust similar à do original: Os arquivos mantém o mesmo nome mas com a extensão \texttt{.cxx} ou \texttt{.hxx} substituída por \texttt{.rs}. Uma exceção é o arquivo \texttt{smallvcm.cxx}, que foi renomeado para \texttt{main.rs} para seguir a organização padronizada descrita na seção anterior.
 
 \todo{Overview do código necessário para o objetivo.}
 
 \section{Mudanças e Dificuldades}
 
-Durante o processo de re-escrita foram encontradas diversas dificuldades provenientes da escolha da \emph{Rust} e de seu estado de desenvolvimento atual. Foram necessárias mudanças no paradigma de implementação de certos aspectos do programa para se adequar as convenções e funcionalidades da \emph{Rust}.
+Durante o processo de re-escrita foram encontradas diversas dificuldades provenientes da escolha da Rust e de seu estado de desenvolvimento atual. Foram necessárias mudanças no paradigma de implementação de certos aspectos do programa para se adequar as convenções e funcionalidades da Rust.
 
 \subsection{Herança}
 
-Um dos elementos de linguagem notoriamente ausentes de \emph{Rust} é o conceito de herança de tipos. As alternativas apresentadas para fazer re-uso de código e comportamentos polimórficos são o uso de composição e de \emph{traits}, respectivamente.
+Um dos elementos de linguagem notoriamente ausentes de Rust é o conceito de herança de tipos. As alternativas apresentadas para fazer re-uso de código e comportamentos polimórficos são o uso de composição e de \emph{traits}, respectivamente.
 
-No código do \emph{SmallVCM} existem alumas instâncias de hierarquias de herança de classe, todas seguindo o mesmo padrão: Uma classe base abstrata, as vezes contendo alguns campos de dados concretos, além de definições de funções virtuais que devem ser substituídas pelas classes que as implementam. Esse padrão é utilizado pelas hierarquias definindo algoritmos de compilação (base \texttt{AbstractRenderer}); formas geométricas (base \texttt{AbstractGeometry}) e tipos de fontes luminosas (base \texttt{AbstractLight}).
+No código do SmallVCM existem alumas instâncias de hierarquias de herança de classe, todas seguindo o mesmo padrão: Uma classe base abstrata, as vezes contendo alguns campos de dados concretos, além de definições de funções virtuais que devem ser substituídas pelas classes que as implementam. Esse padrão é utilizado pelas hierarquias definindo algoritmos de compilação (base \texttt{AbstractRenderer}); formas geométricas (base \texttt{AbstractGeometry}) e tipos de fontes luminosas (base \texttt{AbstractLight}).
 
 Duas dessas hierarquias, de formas geométricas e de fontes luminosas, não possuem campos de dados na classe base e portanto podem ser diretamente convertidos para \emph{traits} a serem implementados por estruturas.
 
@@ -413,9 +412,9 @@ Devido a falta de suporte a sobrecarga de funções, algumas funções tiveram q
 
 \subsection{Sobrecarga de Operadores e Conversões Automáticas}
 
-O módulo \texttt{math.rs} contém uma biblioteca de tipos matemáticos, consistindo de vetores 2D e 3D, além de matrizes 4x4. Este arquivo sofreu várias modificações comparado ao original devido ao seu frequente uso de sobrecarga de operadores, que diferem em sintaxe e implementação, e conversões automáticas, que não são suportadas em \emph{Rust}.
+O módulo \texttt{math.rs} contém uma biblioteca de tipos matemáticos, consistindo de vetores 2D e 3D, além de matrizes 4x4. Este arquivo sofreu várias modificações comparado ao original devido ao seu frequente uso de sobrecarga de operadores, que diferem em sintaxe e implementação, e conversões automáticas, que não são suportadas em Rust.
 
-Em \emph{Rust} a sobrecarga de operadores é feita através da implementação de \emph{traits} especiais. No entanto, este é um procedimento muito mais verboso do que simplesmente declarar funções com um nome especial como é feito em \Cpp. Assim, para evitar uma grande quantidade de duplicação de código, foi usada a funcionalidade de macros de \emph{Rust} para gerar as implementações dos operadores para \texttt{Vec2} e \texttt{Vec3} sem precisar repetir todas as definições. Parte da definição desta macro e sua correspondente expansão são mostradas na figura \ref{code:mathmacro}.
+Em Rust a sobrecarga de operadores é feita através da implementação de \emph{traits} especiais. No entanto, este é um procedimento muito mais verboso do que simplesmente declarar funções com um nome especial como é feito em \Cpp. Assim, para evitar uma grande quantidade de duplicação de código, foi usada a funcionalidade de macros de Rust para gerar as implementações dos operadores para \texttt{Vec2} e \texttt{Vec3} sem precisar repetir todas as definições. Parte da definição desta macro e sua correspondente expansão são mostradas na figura~\ref{code:mathmacro}.
 
 \begin{figure}
 \begin{lstlisting}
@@ -472,11 +471,11 @@ Uma alternativa seria definir um \emph{trait} \texttt{FromVector}, que poderia s
 
 \subsection{Instabilidade}
 
-\emph{Rust} ainda está em um período de intenso desenvolvimento e por isso mudanças na definição da linguagem e na implementação do compilador ainda acontecem frequentemente. Foram encontradas várias situações onde uma atualização do compilador, buscando arrumar \emph{bugs} de compilação ou tomar proveito de funções novas da linguagem, necessitou a atualização do código para se adequar a revisões feitas na linguagem.
+Rust ainda está em um período de intenso desenvolvimento e por isso mudanças na definição da linguagem e na implementação do compilador ainda acontecem frequentemente. Foram encontradas várias situações onde uma atualização do compilador, buscando arrumar \emph{bugs} de compilação ou tomar proveito de funções novas da linguagem, necessitou a atualização do código para se adequar a revisões feitas na linguagem.
 
 \subsection{\emph{Enums}}
 
-O módulo de configuração (\texttt{config.rs}) faz uso de uma \emph{enum} para selecionar o algoritmo. Em \Cpp, valores de uma enumeração tem um respectivo valor inteiro associado. \emph{Rust} não associa valores inteiros correspondentes a cada valor da enumeração, pois valores podem ter outros itens de dados associados a eles, sendo análogos a Tipos de Dados Algébricos presentes em \emph{Haskell} ou \emph{Standard ML}.  Portanto, algumas técnicas utilizadas pelo código original, como iterar através dos possíveis valores numéricos das enumerações ou as utilizar como índice em um vetor, não são possíveis aqui. Estes usos são substituídos por usos da expressão \texttt{match}, que por requerer a menção dos nomes dos itens da enumeração é mais repetitiva, mas também mais clara. Uma comparação entre os dois tipos de código pode ser vista na figura \ref{code:enums}. Nota-se que os testes para verificar se o valor está dentro do intervalo esperado não são necessários em Rust, pois a linguagem não permite a atribuição de valores não presentes na enumeração a variáveis desse tipo.
+O módulo de configuração (\texttt{config.rs}) faz uso de uma \emph{enum} para selecionar o algoritmo. Em \Cpp, valores de uma enumeração tem um respectivo valor inteiro associado. Rust não associa valores inteiros correspondentes a cada valor da enumeração, pois valores podem ter outros itens de dados associados a eles, sendo análogos a Tipos de Dados Algébricos presentes em \emph{Haskell} ou \emph{Standard ML}.  Portanto, algumas técnicas utilizadas pelo código original, como iterar através dos possíveis valores numéricos das enumerações ou as utilizar como índice em um vetor, não são possíveis aqui. Estes usos são substituídos por usos da expressão \texttt{match}, que por requerer a menção dos nomes dos itens da enumeração é mais repetitiva, mas também mais clara. Uma comparação entre os dois tipos de código pode ser vista na figura~\ref{code:enums}. Nota-se que os testes para verificar se o valor está dentro do intervalo esperado não são necessários em Rust, pois a linguagem não permite a atribuição de valores não presentes na enumeração a variáveis desse tipo.
 
 Esta funcionalidade também foi utilizada de maneira vantajosa, substituindo um par de variáveis de configuração que determinava a condição de parada do algoritmo, dos quais apenas uma poderia estar ativa de cada vez, por uma \emph{enum} de duas variantes, cada uma contendo seu respectivo parâmetro. Esta mudança evita que o sistema acidentalmente seja colocado em um estado inválido, e também remove ambiguidade na hora de testar pela condição.
 
@@ -563,21 +562,52 @@ impl Algorithm {
 \end{lstlisting}
 	\end{minipage}
 	\todo{sub-captions}
-	\caption{Comparação entre \emph{enums} em C++ e \emph{Rust}}
+	\caption{Comparação entre \emph{enums} em C++ e Rust}
 	\label{code:enums}
 \end{figure}
 
 \subsection{Ponteiros Nulos}
 
-\emph{Rust} desestimula o uso de ponteiros, \todo{rev bib: restringindo seu uso a blocos especiais utilizados para a escrita de código baixo nível livre da checagem estática de segurança de memória.} Programadores devem geralmente substituí-los por referências, que não podem ser nulas e que também estão são verificadas em compilação para garantir que nunca se tornem inválidas, ou utilizar o tipo `Box<T>`, que representa uma alocação de memória pertencente a uma variável ou campo e que é gerenciada automaticamente para manter estas mesmas garantias.
+Rust desestimula o uso de ponteiros, \todo{rev bib: restringindo seu uso a blocos especiais utilizados para a escrita de código baixo nível livre da checagem estática de segurança de memória.} Programadores devem geralmente substituí-los por referências, que não podem ser nulas e que também estão são verificadas em compilação para garantir que nunca se tornem inválidas, ou utilizar o tipo `Box<T>`, que representa uma alocação de memória pertencente a uma variável ou campo e que é gerenciada automaticamente para manter estas mesmas garantias.
 
 O código original inicializava alguns ponteiros para nulo. Em sua maioria estes casos foram simplesmente adaptados para diretamente inicializar o ponteiro com seu valor final, agora com a garantia de que sempre terão um valor válido. Em um caso foi utilizado o tipo \texttt{Option<T>}, \todo{explicar option na rev. bib.} para permitir uma alocação opcional de um valor. Este uso também poderia ser eliminado com alguma re-estruturação do código.
 
 \subsection{Biblioteca padrão}
 
-É necessário de um gerador de números pseudo-aleatórios para o cálculo da integração por monte carlo. O \emph{SmallVCM} original utilizava o popular \emph{MT19937}, uma versão do algoritmo \emph{Mersenne Twister} \citep{matsumoto1998}, presente na biblioteca padrão \Cpp. Como este gerador não estava presente na biblioteca padrão da \emph{Rust}, foi optado implementar o algoritmo \emph{xorshift128+} \citep{vigna2014} devido a seu bom desempenho, boa qualidade de resultados e pequena implementação quando comparado ao \emph{Mersenne Twister}. O algoritmo também foi posteriormente implementado em \Cpp\ para que ambos possuíssem as mesmas características para fins de comparação.
+É necessário de um gerador de números pseudo-aleatórios para o cálculo da integração por monte carlo. O SmallVCM original utilizava o popular \emph{MT19937}, uma versão do algoritmo \emph{Mersenne Twister} \citep{matsumoto1998}, presente na biblioteca padrão \Cpp. Como este gerador não estava presente na biblioteca padrão da Rust, foi optado implementar o algoritmo \emph{xorshift128+} \citep{vigna2014} devido a seu bom desempenho, boa qualidade de resultados e pequena implementação quando comparado ao \emph{Mersenne Twister}. O algoritmo também foi posteriormente implementado em \Cpp\ para que ambos possuíssem as mesmas características para fins de comparação.
 
 Para a leitura de parâmetros passado via linha de comando, foi utilizado o módulo \texttt{getopts}, presente na biblioteca padrão. Na versão \Cpp\ a leitura é feita de forma manual.
+
+\chapter{Resultados}
+
+Este capítulo descreve os testes comparativos de realizados entre o SmallVCM e sua \emph{port} para Rust, SmallVCM-rs.
+
+\subsection{Desempenho}
+
+A fim de averiguar se pode se esperar uma perda de performance quando se implementa um algoritmo em Rust comparado a um equivalente em \Cpp, foram feitas medidas do tempo de execução da mesma tarefa nas duas implementações.
+
+Foi feita uma tentativa de se utilizar o compilador clang, que, assim como o rustc, utiliza o LLVM como \emph{back-end} de otimização e geração de código, a fim de eliminar esta diferença e tornar as comparações com a versão escrita em Rust mais diretamente aplicáveis. Para isso, foi necessário remover o suporte a OpenMP do programa, pois a tecnologia não é bem suportada pelo clang. Esta modificação necessitou de poucas mudanças, bastando a remoção de algumas diretivas \texttt{\#include} e \texttt{\#pragma omp} e chamadas de inicialização do OpenMP.\footnote{Esta versão pode ser encontrada em \url{https://github.com/yuriks/SmallVCM/tree/no-openmp}} Após estas modificações o programa pôde ser compilado e executado com sucesso, mas sua execução mostrou-se demorada, com o clang gerando código muito menos eficiente que o gcc e rustc, resultando em uma diferença de aproximadamente 300\% no tempo de execução. Como Rust, assim como clang, também utiliza o LLVM para sua geração de código, eram esperados resultados similares. Investigações realizadas com desenvolvedores do LLVM em seu canal IRC indicaram que seria vantajoso tentar a última versão de desenvolvimento (\emph{Head of Tree}) do clang, que havia recebido melhoras na geração de código em áreas relevantes ao programa. Fazendo uso da versão de desenvolvimento, constatou-se que ambos compiladores agora geravam código com desempenho similar.
+
+Todas as medições foram realizadas num computador com a seguinte configuração de hardware: CPU Intel i5-4670K 3.4 GHz Quad-core, 16 GB de RAM e disco Samsung 840 Pro 256 GB. O SO utilizado foi Arch Linux, arquitetura \texttt{x86\_64}, rodando dentro de um máquina virtual VirtualBox com 3GB de RAM, 4 cores e 40 GB de disco, com Windows 8.1 como SO \emph{host}. As versões dos compiladores utilizadas foram: gcc 4.9.2, clang SVN \texttt{222777}, rustc Git \texttt{81eeec094}. As opções de compilação utilizadas foram: \texttt{-O2 -std=c++11} (gcc), \texttt{-O2 -std=c++11 -stdlib=libc++ -lc++abi} (clang) e \texttt{-{}-opt-level 3} (rustc). Para a versão \emph{multi-threaded} no compilador gcc, foi também adicionada a opção \texttt{-fopenmp} para habilitar o suporte a OpenMP.
+
+Para medir o tempo de execução do algoritmo, foi utilizada a ferramenta \texttt{perf stat}. Passando-se a opção \texttt{-r} a ferramenta irá repetir o teste várias vezes, reportando a média e o desvio padrão dos dados coletados. Esta função foi utilizada com 10 repetições em cada teste. A invocação do SmallVCM foi feita com as opções \texttt{-a el -i 100} no teste \emph{single-threaded} e \texttt{-a el -i 400} no teste \emph{multi-threaded}. Os resultados obtidos estão dispostos na tabela~\ref{tab:vcm-timings}.
+
+\begin{table}
+	\centering
+	\begin{tabular}{c|c|c|c|c}
+	Iterações & \emph{Threads} & rustc & clang & gcc \\ \hline
+	100 & 1 & $\SI{7.665}{\s} \pm 0.22\%$ & $\SI{8.253}{\s} \pm 0.15\%$ & $\SI{ 8.970}{\s} \pm 0.29\%$ \\
+	400 & 4 & $\SI{8.802}{\s} \pm 0.55\%$ & ---                         & $\SI{10.405}{\s} \pm 1.35\%$ \\
+	\end{tabular}
+	\caption{Tempo de execução do algoritmo \texttt{EyeLight} em diferentes implementações e compiladores.}
+	\label{tab:vcm-timings}
+\end{table}
+
+Os tempos e as diferenças entre eles são consistente através de várias execuções dos testes e mantém-se proporcionais ao número de iterações realizadas quando este parâmetro é alterado.
+
+\chapter{Conclusão}
+
+
 
 \chapter{Próximas Etapas}
 
@@ -586,8 +616,8 @@ Para a leitura de parâmetros passado via linha de comando, foi utilizado o mód
 \begin{enumerate}
 	\item Continuar a re-escrita em andamento do SmallVCM, afim de que esta tenha funcionalidade o suficiente para gerar imagens usando pelo menos um tipo de algoritmo.
 	\item Paralelizar o código do renderizador, explorando diferentes alternativas para atingir este fim.
-	\item Realizar testes comparativos para determinar o desempenho relativo entre duas versões, como parte do objetivo de determinar se a linguagem \emph{Rust} é compatível com este tipo de aplicação.
-	\item Trazer o resto dos algoritmos de renderização do SmallVCM à versão em \emph{Rust}, para que ambos tenham o mesmo conjunto de funções.
+	\item Realizar testes comparativos para determinar o desempenho relativo entre duas versões, como parte do objetivo de determinar se a linguagem Rust é compatível com este tipo de aplicação.
+	\item Trazer o resto dos algoritmos de renderização do SmallVCM à versão em Rust, para que ambos tenham o mesmo conjunto de funções.
 \end{enumerate}
 
 \setlength{\baselineskip}{\baselineskip}
