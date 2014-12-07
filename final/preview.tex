@@ -139,7 +139,7 @@
 \makeapprove
 
 \chapter*{Agradecimentos}
-À meus pais, que me mantiveram no chão durante todos esses anos, e que sempre estiveram presentes me estimulando a progredir.
+Aos meus pais, que me mantiveram no chão durante todos esses anos, e que sempre estiveram presentes me estimulando a progredir.
 
 Aos amigos, vários dos quais provavelmente não irão ler isto por questões de linguagem, por sempre proporcionarem conversas divertidas ou interessantes sobre todos os assuntos, e por estarem sempre atentos quando precisava de um desabafo.
 
@@ -201,7 +201,7 @@ A \emph{Computação Gráfica} é a área da Ciência da Computação que estuda
 criação, análise e manipulação de imagens e conceitos relacionados. Dentre estas, a síntese (ou
 renderização) de imagens é onde uma imagem é criada de forma computacional a partir de um modelo
 matemático, frequentemente buscando o fotorrealismo. Esta área possui uma vasta quantidade de aplicações
-práticas: como exemplo, é usada na engenharia, durante o projeto de máquinas ou construções; na arquitetura, para
+práticas, como por exemplo: na engenharia, durante o projeto de máquinas ou construções; na arquitetura, para
 a visualização de espaços; e para entretenimento, em efeitos especiais de filmes ou em jogos 3D.
 
 Como a geração de imagens fotorrealistas envolve essencialmente uma simulação completa da física da
@@ -220,8 +220,8 @@ comportamento da luz com relativa precisão. \citep{pharr2010}
 
 No entanto, este realismo vem ao custo de bastante poder de processamento. Mesmo com o avanço
 tecnológico de CPUs, a renderização de imagens continua sendo uma tarefa árdua para processadores.
-Sistemas de renderização profissionais são quase exclusivamente escritos em \Cpp\ e não em
-linguagens de mais alto nível, devido às penalidades de desempenho que estas impõem. Sistemas mais
+Sistemas de renderização profissionais são quase exclusivamente escritos em \Cpp\ devido ao controle
+que proporciona, não geralmente encontrado em linguagens de mais alto nível. Sistemas mais
 recentes fazem o uso de GPUs para acelerar a imensa quantidade de cálculos necessária.
 Tendo em vista a baixa expressividade de \Cpp\ comparada a estas outras linguagens, torna-se
 interessante explorar alternativas que permitam desenvolvimento mais fácil sem sacrificar o
@@ -272,7 +272,7 @@ Rust \citep{rust} é uma linguagem de programação de propósito geral, oficial
 Mozilla Research mas, sendo um projeto \emph{open-source}, desenvolvida também por sua comunidade. Ela busca atender as necessidades
 de programadores que atualmente utilizariam linguagens como C ou
 \Cpp, por questões de desempenho ou de controle sobre o hardware. Uma de suas características mais
-distintivas é o modelo de referências que utiliza, baseado em regiões \citep{grossman2002}, que
+distintivas é a utilização de um modelo de referências baseado em regiões \citep{grossman2002}, que
 automaticamente gerencia a vida de alocações de memória, evitando que sejam feitos erros neste
 gerenciamento, ou que memória inválida seja acessada pelo programa e fazendo isso sem necessitar o uso de um
 \emph{garbage collector}. A linguagem, originalmente projetada por Graydon Hoare como um projeto
@@ -348,7 +348,7 @@ fn get_first<T, 'a>
 
 Para facilitar a análise do comportamento de um programa pelo usuário, Rust também impõe restrições quanto a mutabilidade de referências a objetos. Referências \emph{únicas} ou \emph{mutáveis} permitem a modificação do objeto a que apontam, mas restringem qualquer acesso a ele sem ser pela referência enquanto estiver emprestado. Referências \emph{compartilhadas} ou \emph{imutáveis} restringem a modificação do objeto para a qual apontam, mas permitem a existência de várias delas apontando para o mesmo. Isto garante que, se uma função receber uma referência compartilhada, o objeto a qual ela aponta nunca sera modificado durante a duração da função, não precisando o programador ou o compilador preocupar-se com efeitos colaterais de operações em outros objetos. Da mesma forma, se uma função receber uma função única, poderá modificá-la sem se preocupar se isto irá interferir com outros objetos ou referências presentes no programa. Exemplos das situações descritas aqui são mostrados na \autoref{code:aliasing}.
 
-A restrição em \emph{aliasing} também é importante para evitar que referências possam apontar para posições inválidas: ela evita uma classe de problemas causados pela modificação de um objeto enquanto existam referências à objetos contidos nele. Utilizando-se um vetor redimensionável, por exemplo, poderia ocorrer uma situação em que é criada uma referência a um elemento dentro do vetor. Se forem então permitidas modificações ao vetor, este poderia ser redimensionado de forma a invalidar a referência. \citep{rust-lifetimes}
+A restrição em \emph{aliasing} também é importante para evitar que referências possam apontar para posições inválidas: ela evita uma classe de problemas causados pela modificação de um objeto enquanto existam referências à objetos contidos nele. Utilizando-se um vetor redimensionável, por exemplo, pode ser criada uma referência à um elemento dentro do vetor. Nesta situação, se então forem permitidas modificações ao vetor, este poderia ser redimensionado de forma a invalidar a referência. \citep{rust-lifetimes}
 
 \begin{figure}
 	\centering
@@ -543,7 +543,7 @@ Aqui são descritas as atividades realizadas para atingir os objetivos propostos
 
 \subsection{Rust}
 
-O compilador \emph{rustc}, além de ser oficialmente distribuído em forma de código fonte, também é disponibilizado através de pacotes binários distribuídos na página do projeto\footnote{\url{http://www.rust-lang.org/install.html}}. Estes pacotes evitam que usuários passem pelo processo de \emph{bootstrap} do compilador, que pode levar mais de uma hora, dependendo do hardware em que é executado. Atualizados diariamente, os pacotes binários são providos para os sistemas operacionais Linux, Mac OS X e Windows, em versões 32-bits ou 64-bits. Ocasionalmente são também feitas versões numeradas do compilador, porém o uso destas não é recomendado pela comunidade de usuários pois rapidamente ficam defasadas, um problema se pretende-se utilizar qualquer biblioteca de terceiros ou consultar a documentação online.
+O compilador \emph{rustc}, além de ser oficialmente distribuído em forma de código fonte, também é disponibilizado através de pacotes binários na página do projeto\footnote{\url{http://www.rust-lang.org/install.html}}. Estes pacotes evitam que usuários passem pelo processo de \emph{bootstrap} do compilador, que pode levar mais de uma hora, dependendo do hardware em que é executado. Atualizados diariamente, os pacotes binários são providos para os sistemas operacionais Linux, Mac OS X e Windows, em versões 32-bits ou 64-bits. Ocasionalmente são também feitas versões numeradas do compilador, porém o uso destas não é recomendado pela comunidade de usuários pois rapidamente ficam defasadas, um problema se pretende-se utilizar qualquer biblioteca de terceiros ou consultar a documentação online.
 
 Para o desenvolvimento, foi utilizada uma máquina virtual contendo o sistema operacional Arch Linux. Além de conter software atualizado, existem pacotes de terceiros para a distribuição que automaticamente instalam versões atualizadas do compilador de Rust.\footnote{\url{https://aur.archlinux.org/packages/rust-nightly-bin/}} Como a linguagem ainda está em fase de mudança frequente, poder atualizar o compilador facilmente é importante para se manter atualizado com as últimas mudanças e funcionalidades incluídas quase que diariamente na linguagem.
 
