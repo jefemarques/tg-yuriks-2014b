@@ -8,3 +8,6 @@
 *.nav
 *.snm
 *.vrb
+*.lot
+*.lof
+*.loap
