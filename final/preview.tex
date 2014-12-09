@@ -159,7 +159,7 @@ trabalho teve como objetivo re-implementar o renderizador SmallVCM, escrito em \
 Rust, a fim de avaliar se esta nova linguagem poderá ser uma alternativa viável no futuro. Foi
 realizada a tradução de parte do programa, incluindo um de seus algoritmos de renderização, buscando
 manter uma estrutura similar, resultando em um renderizador com funcionalidade suficiente para gerar
-imagens iguais ao original utilizando este algoritmo. Testes de performance realizados indicaram que
+imagens iguais ao original utilizando este algoritmo. Testes de desempenho realizados indicaram que
 o novo programa consegue gerar estas imagens em menos tempo que o programa original compilado usando
 um \emph{back-end} de otimização similar, mesmo sem ter sofrido modificações no algoritmo.
 \end{abstract}
@@ -246,7 +246,7 @@ realizar uma comparação quantitativa e qualitativa entre as versões escritas 
 desempenho e organização de código, respectivamente. Como base será utilizado o SmallVCM \citep{smallvcm}, um
 \emph{path tracer} de pesquisa escrito em \Cpp, escolhido por implementar uma variedade
 de algoritmos diferentes de \emph{path tracing}, ser paralelizado utilizando \emph{multi-threading} e por ser relativamente compacto, consistindo de
-aproximadamente 5000 linhas de código.
+aproximadamente 3200 linhas de código.
 
 \subsection{Passos de metodologia}
 \begin{itemize}
@@ -260,7 +260,7 @@ aproximadamente 5000 linhas de código.
 
 \section{Justificativa}
 
-Rust é uma linguagem relativamente nova e ainda não existe uma quantidade significativa de aplicações gráficas de \emph{path tracing} escritos nela. Porém, dados seus objetivos de oferecer alta-performance, ser uma linguagem de alto-nível e de eliminar erros de memória, ela tem potencial de se tornar uma boa alternativa para essas aplicações no futuro, tornando mais fácil a manutenção destes sistemas sem impactar seu desempenho. Este trabalho busca validar a linguagem neste domínio e determinar se ela atualmente cumpre estes objetivos de forma adequada.
+Rust é uma linguagem relativamente nova e ainda não existe uma quantidade significativa de aplicações gráficas de \emph{path tracing} escritos nela. Porém, dados seus objetivos de oferecer alto desempenho, ser uma linguagem de alto-nível e de eliminar erros de memória, ela tem potencial de se tornar uma boa alternativa para essas aplicações no futuro, tornando mais fácil a manutenção destes sistemas sem impactar seu desempenho. Este trabalho busca validar a linguagem neste domínio e determinar se ela atualmente cumpre estes objetivos de forma adequada.
 
 \chapter{Fundamentos e Revisão de Literatura}
 
@@ -296,7 +296,7 @@ aplicações embarcadas em microprocessadores.
 
 \subsection{\emph{Lifetimes}}
 
-Para criar uma linguagem segura, eficiente e sem \emph{runtime}, é necessário assegurar-se de que todos os ponteiros, ou referências, no programa sejam válidos quando são acessados. Para que isto seja possível sem incidir um custo na execução, esta é uma tarefa que precisa ser feita durante a compilação do programa, e não durante sua execução, como é feito em muitas linguagens onde todos os acessos através de ponteiros são testados por validez antes de serem executados ou onde esta tarefa é deixada a cargo do programador, resultando em eventuais erros.
+Para criar uma linguagem segura, eficiente e sem \emph{runtime}, é necessário assegurar-se de que todos os ponteiros, ou referências, no programa sejam válidos quando são acessados. Para que isto seja possível sem haver custo durante a execução, esta é uma tarefa que precisa ser feita durante a compilação do programa, e não durante sua execução, como é feito em muitas linguagens onde todos os acessos através de ponteiros são testados por validez antes de serem executados ou onde esta tarefa é deixada a cargo do programador, resultando em eventuais erros.
 
 Rust modela esta restrição fazendo uma análise do fluxo de valores e referências na função, que tem sua vida delimitada por escopos léxicos no programa. É permitido que uma variável seja usada em escopos dentro da qual ela foi definida, e quaisquer referências criadas à esta variável tem seu tipo associado ao escopo, de forma a proibir que estas escapem para um escopo superior onde não seriam mais necessariamente válidas, pois a variável à qual apontam teria sido destruída no fim do seu respectivo escopo. A região na qual uma variável é válida e referências a ela podem existir é chamada de sua \emph{lifetime}.
 
@@ -346,7 +346,7 @@ fn get_first<T, 'a>
 
 \subsection{Prevenção de \emph{Aliasing}} \label{sect:aliasing}
 
-Para facilitar a análise do comportamento de um programa pelo usuário, Rust também impõe restrições quanto a mutabilidade de referências a objetos. Referências \emph{únicas} ou \emph{mutáveis} permitem a modificação do objeto a que apontam, mas restringem qualquer acesso a ele sem ser pela referência enquanto estiver emprestado. Referências \emph{compartilhadas} ou \emph{imutáveis} restringem a modificação do objeto para a qual apontam, mas permitem a existência de várias delas apontando para o mesmo. Isto garante que, se uma função receber uma referência compartilhada, o objeto a qual ela aponta nunca sera modificado durante a duração da função, não precisando o programador ou o compilador preocupar-se com efeitos colaterais de operações em outros objetos. Da mesma forma, se uma função receber uma função única, poderá modificá-la sem se preocupar se isto irá interferir com outros objetos ou referências presentes no programa. Exemplos das situações descritas aqui são mostrados na \autoref{code:aliasing}.
+Para facilitar a análise do comportamento de um programa pelo usuário, Rust também impõe restrições quanto a mutabilidade de referências a objetos. Referências \emph{únicas} ou \emph{mutáveis} permitem a modificação do objeto a que apontam, mas restringem qualquer acesso a ele sem ser pela referência enquanto estiver emprestado. Referências \emph{compartilhadas} ou \emph{imutáveis} restringem a modificação do objeto para a qual apontam, mas permitem a existência de várias delas apontando para o mesmo. Isto garante que, se uma função receber uma referência compartilhada, o objeto a qual ela aponta nunca será modificado durante a execução da função, não precisando o programador ou o compilador preocupar-se com efeitos colaterais de operações em outros objetos. Da mesma forma, se uma função receber uma função única, poderá modificá-la sem se preocupar se isto irá interferir com outros objetos ou referências presentes no programa. Exemplos das situações descritas aqui são mostrados na \autoref{code:aliasing}.
 
 A restrição em \emph{aliasing} também é importante para evitar que referências possam apontar para posições inválidas: ela evita uma classe de problemas causados pela modificação de um objeto enquanto existam referências à objetos contidos nele. Utilizando-se um vetor redimensionável, por exemplo, pode ser criada uma referência à um elemento dentro do vetor. Nesta situação, se então forem permitidas modificações ao vetor, este poderia ser redimensionado de forma a invalidar a referência. \citep{rust-lifetimes}
 
@@ -432,7 +432,7 @@ fn main() {
 	\label{code:aliasing}
 \end{figure}
 
-Esta garantia de que valores só podem ser modificados através de um único ponto por vez também automaticamente assegura que não existam erros de sincronização em programas concorrentes. Dados compartilhados por vários \emph{threads} serão acessados exclusivamente através de referências compartilhadas, com a garantia de que não serão modificados, e assim não precisam de exclusão mútua para evitar condições de corrida. Por outro lado, se um \emph{thread} possuir possuir uma referência única, sabe-se que este dado não pode ser lido em nenhum outro lugar, também evitando a necessidade de sincronismo durante modificações.
+Esta garantia de que valores só podem ser modificados através de um único ponto por vez também automaticamente assegura que não existam erros de sincronização em programas concorrentes. Dados compartilhados por vários \emph{threads} serão acessados exclusivamente através de referências compartilhadas, com a garantia de que não serão modificados, e assim não precisam de exclusão mútua para evitar condições de corrida. Por outro lado, se um \emph{thread} possuir uma referência única, sabe-se que este dado não pode ser lido em nenhum outro lugar, também evitando a necessidade de sincronismo durante modificações.
 
 \subsection{\emph{Traits}}
 
@@ -523,7 +523,7 @@ algoritmo foi depois reformulado em \citep{veach1997}, onde também foi introduz
 	\label{fig:smallvcm_img}
 \end{figure}
 
-SmallVCM \citep{smallvcm} é um renderizador de imagens baseado em algoritmos de \emph{ray tracing} e \emph{path tracing} desenvolvido pelo autor para servir como uma implementação de exemplo de seu algoritmo \emph{Vertex Connection and Merging} \citep{georgiev2012}. Além deste algoritmo, o programa também implementa uma variedade de outros incluindo \emph{ray casting}, \emph{path tracing}, \emph{light tracing}, \emph{bidirectional path tracing} e \emph{photon mapping}. Por ter propósito de educar sobre os algoritmos, não possui funcionalidades avançadas como animação e é limitado a renderizar um pequeno conjunto de cenas de exemplo incluídas no programa. Uma imagem gerada com o programa pode ser vista na \autoref{fig:smallvcm_img}. O programa também possui uma função que gera um relatório de comparação da performance relativa de cada algoritmo.
+SmallVCM \citep{smallvcm} é um renderizador de imagens baseado em algoritmos de \emph{ray tracing} e \emph{path tracing} desenvolvido pelo autor para servir como uma implementação de exemplo de seu algoritmo \emph{Vertex Connection and Merging} \citep{georgiev2012}. Além deste algoritmo, o programa também implementa uma variedade de outros incluindo \emph{ray casting}, \emph{path tracing}, \emph{light tracing}, \emph{bidirectional path tracing} e \emph{photon mapping}. Por ter propósito de educar sobre os algoritmos, não possui funcionalidades avançadas como animação e é limitado a renderizar um pequeno conjunto de cenas de exemplo incluídas no programa. Uma imagem gerada com o programa pode ser vista na \autoref{fig:smallvcm_img}. O programa também possui uma função que gera um relatório de comparação do desempenho relativo de cada algoritmo.
 
 Escrito em \Cpp, o SmallVCM segue uma estrutura de projeto claramente organizada, com seus tipos e funções divididos em arquivos de acordo com sua função principal. As implementações dos algoritmos de renderização são implementadas em classes e arquivos separados, e utilizam o resto da infraestrutura de cena e cálculo do projeto. A partir das opções passadas na linha de comando, é criada uma cena, utilizando um dos modelos disponíveis, e um renderizador, dos quais existem várias implementações para os vários algoritmos. Todos os renderizadores utilizam uma infraestrutura comum de tipos representando os objetos, fontes luminosas e materiais da cena. Os resultados intermediários da renderização são acumulados em um \texttt{Framebuffer} e subsequentemente salvos para um arquivo após terem sido executadas um número especificado de iterações ou de um certo tempo de execução.
 
@@ -537,7 +537,7 @@ No SmallVCM a paralelização é efetuada construindo-se várias instâncias do 
 
 \chapter{Desenvolvimento}
 
-Aqui são descritas as atividades realizadas para atingir os objetivos propostos. É dada uma explicação da organização do ambiente de compilação e desenvolvimento utilizadas nas duas versões do SmallVCM: a original e a re-escrita em Rust, denominada SmallVCM-rs. Seguindo, é feita uma descrição de quais foram algumas diferenças marcantes encontradas entre as linguagens e de como a implementação de seus componentes mudou no código Rust por influência destas diferenças.
+Aqui são descritas as atividades realizadas para atingir os objetivos propostos. É dada uma explicação da organização do ambiente de compilação e desenvolvimento utilizadas nas duas versões do SmallVCM: a original e a re-escrita em Rust, denominada SmallVCM-rs. Após é feita uma descrição de quais foram algumas diferenças marcantes encontradas entre as linguagens e de como a implementação de seus componentes mudou no código Rust por influência destas diferenças.
 
 \section{Ambiente de Desenvolvimento e Organização de Projeto}
 
@@ -561,7 +561,7 @@ O SmallVCM original, sendo escrito em \Cpp, precisa de um compilador para esta l
 
 \section{Metodologia da \emph{Port}}
 
-Estabeleceu-se um objetivo inicial de converter para Rust o conjunto de código necessário para renderizar uma imagem utilizando o algoritmo básico \texttt{EyeLight}, que calcula apenas a incidência de luz direta de um fonte luminosa posicionada no observador, em modo \emph{single-threaded}. Isto possibilitou que se tivesse uma versão funcional para realizar testes de performance o mais cedo possível. Após, foi feita a paralelização do código para que pudesse rodar em modo \emph{multi-threaded}.
+Estabeleceu-se um objetivo inicial de converter para Rust o conjunto de código necessário para renderizar uma imagem utilizando o algoritmo básico \texttt{EyeLight}, que calcula apenas a incidência de luz direta de um fonte luminosa posicionada no observador, em modo \emph{single-threaded}. Isto possibilitou que se tivesse uma versão funcional para realizar testes de desempenho o mais cedo possível. Após, foi feita a paralelização do código para que pudesse rodar em modo \emph{multi-threaded}.
 
 Procurou-se manter a organização do código da versão re-escrita em Rust similar à do original: Os arquivos mantém o mesmo nome mas com a extensão \texttt{.cxx} ou \texttt{.hxx} substituída por \texttt{.rs}. Uma exceção é o arquivo \texttt{smallvcm.cxx}, que foi renomeado para \texttt{main.rs} para seguir a organização padronizada descrita na seção anterior.
 
@@ -575,7 +575,7 @@ Durante o processo de re-escrita foram encontradas diversas dificuldades proveni
 
 Um dos elementos de linguagem notoriamente ausentes de Rust é o conceito de herança de tipos. As alternativas apresentadas para fazer re-uso de código e comportamentos polimórficos são o uso de composição e de \emph{traits}, respectivamente.
 
-No código do SmallVCM existem alumas instâncias de hierarquias de herança de classe, todas seguindo o mesmo padrão: Uma classe base abstrata, as vezes contendo alguns campos de dados concretos, além de definições de funções virtuais que devem ser substituídas pelas classes que as implementam. Esse padrão é utilizado pelas hierarquias definindo algoritmos de compilação (base \texttt{AbstractRenderer}); formas geométricas (base \texttt{AbstractGeometry}) e tipos de fontes luminosas (base \texttt{AbstractLight}).
+No código do SmallVCM existem algumas instâncias de hierarquias de herança de classe, todas seguindo o mesmo padrão: Uma classe base abstrata, as vezes contendo alguns campos de dados concretos, além de definições de funções virtuais que devem ser substituídas pelas classes que as implementam. Esse padrão é utilizado pelas hierarquias definindo algoritmos de compilação (base \texttt{AbstractRenderer}); formas geométricas (base \texttt{AbstractGeometry}) e tipos de fontes luminosas (base \texttt{AbstractLight}).
 
 Duas dessas hierarquias, de formas geométricas e de fontes luminosas, não possuem campos de dados na classe base e portanto podem ser diretamente convertidos para \emph{traits} a serem implementados por estruturas.
 
@@ -861,7 +861,7 @@ Ao fim do trabalho, havia sido portado para Rust código suficiente do SmallVCM 
 
 \section{Testes de Desempenho}
 
-A fim de averiguar se pode se esperar uma diferença de performance quando se implementa um algoritmo em Rust comparado a um equivalente em \Cpp, foram feitas medidas do tempo de execução da mesma tarefa nas duas implementações.
+A fim de averiguar se pode se esperar uma diferença de desempenho quando se implementa um algoritmo em Rust comparado a um equivalente em \Cpp, foram feitas medidas do tempo de execução da mesma tarefa nas duas implementações.
 
 Foi feita uma tentativa de se utilizar o compilador clang, que, assim como o rustc, utiliza o LLVM como \emph{back-end} de otimização e geração de código, a fim de eliminar esta diferença e tornar as comparações com a versão escrita em Rust mais diretamente aplicáveis. Para isso, foi necessário remover o suporte a OpenMP do programa, pois a tecnologia não é bem suportada pelo clang. Esta modificação necessitou de poucas mudanças, bastando a remoção de algumas diretivas \texttt{\#include} e \texttt{\#pragma omp} e chamadas de inicialização do OpenMP.\footnote{Esta versão, também incluindo a implementação do PRNG \emph{xorshift128+}, pode ser encontrada em \url{https://github.com/yuriks/SmallVCM/tree/xorshift}.} Após estas modificações o programa pôde ser compilado e executado com sucesso, mas sua execução mostrou-se demorada, com o clang gerando código muito menos eficiente que o gcc e rustc, resultando em uma diferença de aproximadamente 300\% no tempo de execução. Como Rust, assim como clang, também utiliza o LLVM para sua geração de código, eram esperados resultados similares. Investigações realizadas com desenvolvedores do LLVM em seu canal IRC indicaram que seria vantajoso tentar a última versão de desenvolvimento (\emph{Head of Tree}) do clang, que havia recebido melhoras na geração de código em áreas relevantes ao programa que já estavam incluídas na versão utilizada pelo rustc. Fazendo uso da versão de desenvolvimento, constatou-se que ambos compiladores agora geravam código com desempenho similar.
 
@@ -884,7 +884,7 @@ Para medir o tempo de execução do algoritmo, foi utilizada a ferramenta \textt
 
 Os tempos e as diferenças entre eles são consistentes através de várias execuções dos testes e mantém-se proporcionais ao número de iterações realizadas quando este parâmetro é alterado. Perfis de desempenho gerados utilizando o comando \texttt{perf record} não indicavam nenhum \emph{hot spot} presente em uma versão mas ausente em outra: a versão Rust era apenas cerca de 10\% rápida nas funções de intersecção geométrica, que são as mais frequentemente utilizadas durante a execução.
 
-\subsection{Interpretação dos Resultados}
+\subsection{Discussão do Resultados}
 
 Analisando-se a \autoref{tab:vcm-timings} é evidente que a linguagem Rust atingiu bons resultados quanto a desempenho nesta aplicação, quando comparada ao mesmo algoritmo escrito em \Cpp. Mesmo relativo ao compilador Clang, que utiliza o mesmo \emph{back-end} de otimização e geração de código, houve uma redução consistente de cerca de 7.12\% no tempo de execução da tarefa.
 
@@ -892,13 +892,13 @@ A linguagem, devido as restrições que impõe no \emph{aliasing} de referência
 
 \chapter{Conclusão}
 
-Este trabalho tinha o objetivo de avaliar a linguagem de programação Rust quando utilizada no contexto de uma aplicação de Computação Gráfica, examinando suas características de expressividade e desempenho comparadas à \Cpp, outra linguagem que já é estabelecida na área. Por isso, buscou-se utilizar como base um software existente escrito nessa linguagem, de modo ter uma plataforma existente a se utilizar como comparativo. O SmallVCM foi escolhido por implementar uma variedade de algoritmos que poderiam ser traduzidos, possuir suporte a \emph{multi-threading}, além de ser compacto o suficiente para tornar este esforço viável no tempo de realização do trabalho.
+Este trabalho teve o objetivo de avaliar a linguagem de programação Rust quando utilizada no contexto de uma aplicação de Computação Gráfica, examinando suas características de expressividade e desempenho comparadas à \Cpp, outra linguagem que já é estabelecida na área. Por isso, buscou-se utilizar como base um software existente escrito nessa linguagem, de modo ter uma plataforma existente a se utilizar como comparativo. O SmallVCM foi escolhido por implementar uma variedade de algoritmos que poderiam ser traduzidos, possuir suporte a \emph{multi-threading}, além de ser compacto o suficiente para tornar este esforço viável no tempo de realização do trabalho.
 
 O desenvolvimento do trabalho iniciou com a identificação de um conjunto alvo de funcionalidade desejada, e este conjunto foi re-escrito em Rust, procurando mante-lo similar à sua versão original afim de facilitar e tornar mais diretas as posteriores comparações. Crucialmente, foi mantida a mesma estrutura geral do programa, buscando assim que as divergências fossem resultantes apenas do uso da nova linguagem e de suas diferenças de paradigma e funcionalidade. O relato destas divergências consiste de boa parte do tratamento deste texto.
 
 Ao fim do trabalho, havia sido portado o conjunto identificado inicialmente, consistindo de parte do código base do programa e um de seus algoritmos de renderização, permitindo assim que a \emph{port} fosse capaz de renderizar uma imagem, produzindo uma saída fiel ao programa original. Realizou-se então uma comparação de desempenho entre as duas versões, e constatou-se que, mesmo dada as adicionais funcionalidades de alto-nível fornecidas pela linguagem \emph{Rust}, ela conseguia até mesmo ultrapassar o programa original escrito em \Cpp\ em seu desempenho em um teste com condições similares.
 
-Para explicar melhor esta diferença de performance, poderia ser feito, em trabalhos futuros, o \emph{port} de outros algoritmos do programa, a fim de determinar se os resultados de performance obtidos aqui são específicos ao teste realizado ou se se aplicam de forma mais geral, e qual sua origem específica. Também seria de interesse o estudo de uma \emph{port} menos rígida, que faça uso de uma arquitetura de programa mais idiomática e adequada a linguagem, e estudar seu impacto nas questões de clareza de código e desempenho comparadas à \emph{port} mais direta realizada aqui.
+Para explicar melhor esta diferença de desempenho, poderia ser feito, em trabalhos futuros, o \emph{port} de outros algoritmos do programa, a fim de determinar se os resultados obtidos aqui são específicos ao teste realizado ou se se aplicam de forma mais geral, e qual sua origem específica. Também seria de interesse o estudo de uma \emph{port} menos rígida, que faça uso de uma arquitetura de programa mais idiomática e adequada a linguagem, e estudar seu impacto nas questões de clareza de código e desempenho comparadas à \emph{port} mais direta realizada aqui.
 
 \setlength{\baselineskip}{\baselineskip}
 \bibliographystyle{abnt}
