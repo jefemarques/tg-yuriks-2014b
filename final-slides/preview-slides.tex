@@ -1,0 +1,367 @@
+% !TEX TS-program = XeLaTeX
+% !TEX encoding = UTF-8 Unicode
+
+\documentclass{beamer}
+
+\mode<presentation>
+{
+  \usetheme{Dresden}
+  \setbeamertemplate{footline}[frame number]
+
+  \setbeamercovered{transparent}
+  \useinnertheme{circles}
+  \usecolortheme{lsc}
+  \beamertemplatenavigationsymbolsempty
+}
+
+\setbeamertemplate{headline}{}
+\setbeamercovered{invisible}
+
+
+\usepackage[brazil]{babel}
+% or whatever
+
+%\usepackage[utf8]{inputenc}
+
+%\usefonttheme{serif}
+
+\usepackage[T1]{fontenc}
+\usepackage{fontspec}
+\setmainfont{Linux Libertine G}
+\setsansfont{Source Sans Pro}
+\setmonofont{Source Code Pro}
+
+\usepackage{textcomp}
+\usepackage{siunitx}
+\usepackage{listings}
+
+\lstdefinelanguage{Rust}{
+  %keywords={typeof, new, true, false, catch, function, return, null, catch, switch, var, if, in, while, do, else, case, break},
+  keywords={struct, trait, fn, let, box, mut, pub, impl, for, match, const, if, as, enum, static},
+  %keywordstyle=\color{blue}\bfseries,
+  %ndkeywords={class, export, boolean, throw, implements, import, this},
+  ndkeywords={self, str, u32, uint},
+  %ndkeywordstyle=\color{darkgray}\bfseries,
+  %identifierstyle=\color{black},
+  sensitive=true,
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  %commentstyle=\color{purple}\ttfamily,
+  stringstyle=\color[rgb]{0.0,0.4,0.65}\ttfamily,
+  %morestring=[b]',
+  morestring=[b]"
+}
+
+\lstdefinestyle{yuriks}{
+	basicstyle=\scriptsize\ttfamily,
+	commentstyle=\color[rgb]{0,0.5,0}\normalfont,
+}
+
+\lstset{
+	language=Rust,
+	style=yuriks,
+	frame=single,
+	texcl=true,
+	numbers=left,
+	showstringspaces=false,
+	}
+	
+\def\Cpp{{C\nolinebreak[4]\raisebox{.2ex}{\scriptsize\bf++}}}
+%\def\Cpp{{C\nolinebreak[4]\raisebox{.3ex}{\small++}}}
+
+\title{Exploração da Linguagem Rust para o Desenvolvimento de um \emph{Path Tracer} Paralelo}
+\author[Yuri Kunde Schlesner]{Yuri Kunde Schlesner\\Orientador: Profª Drª Andrea Scwertner Charão}
+\institute[UFSM]{Ciência da Computação\\Universidade Federal de Santa Maria}
+\date{20/10/2014}
+
+\pgfdeclareimage[height=0.75cm]{university-logo}{images/CienciaDaComputacao.png}
+\logo{\pgfuseimage{university-logo}}
+
+% Delete this, if you do not want the table of contents to pop up at
+% the beginning of each subsection:
+\AtBeginSubsection[]
+{
+  \begin{frame}<beamer>{Outline}
+    \tableofcontents[currentsection,currentsubsection]
+  \end{frame}
+}
+
+
+% If you wish to uncover everything in a step-wise fashion, uncomment
+% the following command: 
+
+%\beamerdefaultoverlayspecification{<+->}
+
+
+\begin{document}
+
+\begin{frame}
+	\titlepage
+	%\pgfuseimage{university-logo}
+\end{frame}
+
+\begin{frame}{Outline}
+  \tableofcontents
+\end{frame}
+
+\section{Introdução}
+\begin{frame}{Introdução}
+	\begin{itemize}
+		\item Ferramenta utilizada: Rust
+		\begin{itemize}
+			\item Princípios e público-alvo
+		\end{itemize}
+		\item Área de aplicação: Path Tracing
+		\begin{itemize}
+			\item Requisitos de processamento
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\pgfdeclareimage[height=4.0cm]{smallvcm-output}{images/ggbs_s_vcm.png}
+\subsection{Objetivos}
+\begin{frame}{Objetivos}
+	\begin{itemize}
+		\item Portar um renderizador \Cpp\ para Rust.
+		\item<2-> SmallVCM
+		\begin{itemize}	
+			\item<2-> Pequeno: $\sim$3200\footnote{Contagem atualizada, mais precisa que a do texto.} linhas de código.
+			\item<2-> Paralelização utilizando OpenMP.
+			\item<2-> Vários algoritmos permitem modularizar o trabalho.
+		\end{itemize}
+	\end{itemize}
+	\visible<2->{\begin{center}\pgfuseimage{smallvcm-output}\end{center}}
+\end{frame}
+
+\subsection{Justificativa}
+\begin{frame}[fragile]{Justificativa}
+	\begin{itemize}
+		\item Rust quer competir com \Cpp
+		\item Poucos estudos e aplicações gráficas no momento
+		\item Validação da linguagem como alternativa viável
+	\end{itemize}
+\end{frame}
+
+\section{Fundamentação}
+\subsection{Rust}
+\begin{frame}{Rust}
+%	\begin{itemize}
+		Principais diferenciais da linguagem:
+		\begin{overprint}
+		\onslide<1>
+		\begin{itemize}
+			\item Compilada, gerando código nativo que não requer \emph{runtime}
+			\item Sistema de Regiões/\emph{Lifetimes}
+			\begin{itemize}
+				\item Gerenciamento de memória sem \emph{garbage collection}
+				\item Prevenção de acessos à memória inválida
+			\end{itemize}
+			\item Prevenção de \emph{aliasing}
+			\begin{itemize}
+				\item Redução de comportamentos surpreendentes
+				\item \emph{Thread safety}
+			\end{itemize}
+		\end{itemize}
+		
+		\onslide<2>
+		\begin{itemize}
+			\item \emph{Traits}.
+			\item Tipos de dados algébricos e \emph{pattern matching}.
+			\item \texttt{unsafe}: controle quando necessário
+		\end{itemize}
+		\end{overprint}
+%	\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\emph{Lifetimes}}
+	\begin{itemize}
+		\item Controle da duração de validade de variáveis pelo compilador.
+		\item Usos da variável depois de sua validade não são permitidas.
+		\item Referências tem validade herdada como parte de seu tipo.
+		\item Permite receber e retornar referências em funções sem comprometer estas garantias.
+	\end{itemize}
+
+	\begin{lstlisting}
+fn get_first<T, 'a>(v: &'a Vec<T>) -> &'a T {
+    return v[0];
+}
+	\end{lstlisting}
+\end{frame}
+
+\begin{frame}{Prevenção de \emph{aliasing}}
+	\begin{itemize}
+		\item Dois tipos de referências: \texttt{\&T} e \texttt{\&mut T}.
+		\item Referências compartilhadas não podem ser usadas para modificar objetos.
+		\item Referencias mutáveis não podem ser compartilhadas.
+		\item Previne que escritas em uma referência sejam visíveis através de outras.
+		\item Automaticamente previne condições de corrida em código \emph{multi-threaded}.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Traits}
+	\begin{itemize}
+		\item Similares à \emph{interfaces} ou \emph{type classes}.
+		\begin{itemize}
+			\item Trait contém métodos, mas não campos.
+			\item Tipos que implementam um trait podem ser tratados polimórficamente (durante compilação e execução.)
+		\end{itemize}
+		\item Implementação do trait para o tipo é separado da definição do tipo.
+		\begin{itemize}
+			\item Novos tipos podem implementar traits existentes.
+			\item Novos traits podem vir com implementações para tipos existentes.
+			\item Métodos com mesmo nome em traits diferentes podem coexistir no mesmo tipo.
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{\texttt{unsafe}}
+	\begin{itemize}
+		\item Permite burlar as regras do sistema de tipos.
+		\item Para implementação de código de baixo-nível ou estruturas de dados.
+		\item Não altera semântica existente, apenas permite mais tipos de operações.
+		\item Blocos de código facilmente identificáveis e auditáveis.
+	\end{itemize}
+\end{frame}
+
+\section{Desenvolvimento}
+\subsection{Implementação}
+\begin{frame}{Visão Geral}
+	\begin{itemize}
+		\item O SmallVCM é dividido em uma parte comum e em algoritmos de renderização específicos que utilizam esta infraestrutura.
+		\item A \emph{port} mantém a mesma estrutura de arquivos, tipos e funções, na medida do possível, afim de facilitar comparações.
+		\item Alguns módulos precisaram de uma estratégia diferente para adaptá-los as funcionalidades e limitações de Rust.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Herança}
+	\begin{itemize}
+		\item Rust não tem herança de \emph{structs}.
+		\item Polimorfismo ainda pode ser realizado utilizando \emph{traits}, mas estes não contém dados, apenas métodos.
+		\item Requer divisão de classes base em partes, se estas também conterem campos de dados compartilhados.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Herança}
+	\begin{itemize}
+		\item Solução: separar dados de métodos.
+		\item Criar estrutura para conter os dados da classe base e disponibilizá-la através do \emph{trait}.
+		\item Mais verboso e menos flexível.
+		\item Na prática, em arquiteturas feitas do zero, geralmente se evita este problema.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Inicialização de Structs}
+	\begin{itemize}
+		\item Diferentemente de \Cpp, não são permitidos valores não inicializados ou ponteiros nulo
+		\item Alguns construtores unidos com métodos de inicialização.
+		\item Maioria dos ponteiros pôde ser transformado em referências não-nulas.
+		\item Em alguns fez-se uso de \texttt{Option<T>}, removendo nulos implícitos.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Sobrecarga de operadores}
+	\begin{itemize}
+		\item Sobrecarga de operadores é feita implementando-se \emph{traits} especiais.
+		\item \texttt{Add}, \texttt{Sub}, \texttt{Index}, etc.
+		\item Bastante verboso comparado com a sintaxe de \Cpp:
+		\begin{lstlisting}[language=C++]
+friend Vec2x<T> operator+(const Vec2x& a, const Vec2x& b) {
+  // ...
+}
+// ... x8 operadores, x2 tipos de vetor
+		\end{lstlisting}
+		\begin{lstlisting}
+impl<T: Num> Add<Vec2x<T>, Vec2x<T>> for Vec2x<T> {
+  #[inline]
+  fn add(&self, o: &Vec2x<T>) -> Vec2x<T> {
+    // ...
+  }
+}
+// ... x8 operadores, x2 tipos de vetor
+		\end{lstlisting}
+		\item Pode-se usar macros para diminuir a repetição.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Enums}
+	\begin{itemize}
+		\item Enums não possuem valores inteiros (públicos) associados a elas.
+		\item Teste precisa ser feito utilizando \emph{pattern matching}.
+	\end{itemize}
+
+	\begin{lstlisting}
+fn get_name(self) -> &'static str {
+  match self {
+    EyeLight => "eye light",
+    PathTracing => "path tracing",
+    LightTracing => "light tracing",
+    ProgressivePhotonMapping => "progressive photon mapping",
+    BidirectionalPhotonMapping => "bidirectional photon mapping",
+    BidirectionalPathTracing => "bidirectional path tracing",
+    VertexConnectionMerging => "vertex connection and merging",
+  }
+}
+	\end{lstlisting}
+\end{frame}
+
+\begin{frame}{Instabilidade da Linguagem}
+	\begin{itemize}
+		\item Em ativo desenvolvimento. Ainda não existem versões estáveis.
+		\item Vários \emph{commits} diariamente. Semântica da linguagem era alterada quase que semanalmente.
+		\item Necessitou de constantes re-ajustes ao código para se atualizar.
+		\item Versão estável 1.0 prevista para fim do ano ou início de 2015.
+	\end{itemize}
+\end{frame}
+
+\section{Resultados e Conclusão}
+\subsection{Resultados}
+\begin{frame}{Resultados}
+	\begin{itemize}
+		\item Foi portado infraestrutura e um algoritmo do SmallVCM, representando aproximadamente metade do código original.
+		\item Renderizador portado \texttt{EyeLight} produz resultados fiéis ao original.
+		\item Paralelizado utilizando a biblioteca ``rayon'', que oferece uma interface simples para computações \emph{multi-threaded fork/join}.
+		\item Infelizmente, outros algoritmos não foram portados.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Desempenho}
+	\begin{itemize}
+		\item Versão em Rust obteve resultados acima do esperado.
+		\item Testes foram feitos com gcc e clang, que assim como o rustc também utiliza LLVM.
+		\item Cerca de 7\% mais rápido que o clang, utilizando mesmos algoritmos e arquitetura de código similar.
+	\end{itemize}
+
+	{\small
+	\begin{tabular}{|c|c|c|c|c|} \hline
+	Iterações & \emph{Threads} & rustc & clang & gcc \\ \hline
+	100 & 1 & \SI{7.665}{\s} (85.45\%) & \SI{8.253}{\s} (92\%) & \SI{ 8.970}{\s} (100\%) \\
+	400 & 4 & \SI{8.802}{\s} (84.59\%) & ---\footnote{clang não possui suporte a OpenMP.} & \SI{10.405}{\s} (100\%) \\ \hline
+	\end{tabular}
+	}
+\end{frame}
+
+\subsection{Conclusão}
+\begin{frame}{Conclusão}
+	\begin{itemize}
+		\item Objetivo de portar parte do SmallVCM, mantendo estrutura similar, para a linguagem Rust.
+		\item Simplicidade do código foi afetada negativamente pelo objetivo de manter a mesma estrutura, devido a diferenças nas linguagens.
+		\item \emph{Port} de um algoritmo com sucesso, obtendo resultados corretos.
+		\item Aumento de desempenho quando comparado ao código original, mesmo sem realização de otimizações específicas.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Trabalhos Futuros}
+%	\begin{itemize}
+		Possíveis continuações para o trabalho:
+		\begin{itemize}
+			\item Portar mais algoritmos, a fim de verificar se a vantagem de desempenho mantém-se neles.
+			\item Realizar uma nova \emph{port} ou re-estruturar a \emph{port} atual utilizando uma estrutura mais idiomática e adequada a Rust e observar ganhos ou perdas em clareza e performance.
+		\end{itemize}
+%	\end{itemize}
+\end{frame}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\end{document}
