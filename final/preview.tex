@@ -31,6 +31,7 @@
 \usepackage[inner=30mm,outer=20mm,top=30mm,bottom=20mm]{geometry} 
 %\usepackage{epstopdf}
 \usepackage{graphicx}
+\usepackage{pdfpages}
 % \geometry{margin=2in} % for example, change the margins to 2 inches all round
 % \geometry{landscape} % set up the page for landscape
 
@@ -114,7 +115,7 @@
 \institute{Centro de Tecnologia}
 \degree{Bacharel em Ciência da Computação}
 
-\trabalhoNumero{}
+\trabalhoNumero{383}
 \advisor[Profª.]{Drª.}{Charão}{Andrea Schwertner}
 \orientadoratrue
 
@@ -136,7 +137,8 @@
 
 \begin{document}
 \maketitle
-\makeapprove
+%\makeapprove
+\includepdf[pages={-}]{folha_de_aprovacao.pdf}
 
 \chapter*{Agradecimentos}
 Aos meus pais, que me mantiveram no chão durante todos esses anos, e que sempre estiveram presentes me estimulando a progredir.
