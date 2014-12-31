@@ -855,6 +855,85 @@ O código original inicializava alguns ponteiros para nulo. Em sua maioria estes
 
 Para a leitura de parâmetros passado via linha de comando, foi utilizado o módulo \texttt{getopts}, presente na biblioteca padrão. Na versão \Cpp\ a leitura é feita de forma manual.
 
+\section{Paralelização}
+
+Para realizar a paralelização do SmallVCM-rs, através de \emph{multi-threading}, foi utilizada a biblioteca \emph{rayon}.\footnote{\url{https://github.com/nikomatsakis/rayon}} A \emph{rayon} não implementa funções de \emph{threading} ela mesma, mas simplesmente utiliza os recursos disponibilizados pela biblioteca padrão e oferece uma interface conveniente para uso em situações de paralelismo \emph{fork-join}.
+
+Para realizar uma computação em paralelo é criado um objeto do tipo \texttt{rayon::Section}, que representa um grupo de tarefas que podem ser executadas paralelamente. A seguir, deve-se adicionar as tarefas a serem computadas ao objeto, utilizando o método \texttt{fork}, que recebe uma \emph{closure} contendo a tarefa. Por fim, chama-se o método \texttt{sync}, que aguarda todas as tarefas registradas na \texttt{Section} serem completadas, ou simplesmente destrói-se o objeto, que causa uma sincronização automaticamente.
+
+A vantagem da utilização da \emph{rayon} é que esta utiliza o sistema de tipos para verificar que os dados utilizados na computação não serão destruídos ou acessados concorrentemente enquanto as tarefas executam. Como as variáveis e dados utilizados são emprestados à \emph{closure} da tarefa, sofrem das normais restrições impostas pelos tipos de referência quanto à modificações e leituras concorrentes. Como a \texttt{Section} sincroniza as tarefas automaticamente antes de sua destruição, também é assegurado que as tarefas já tenham terminado quando os \emph{borrows} são desfeitos. Isto permite que estes dados possam residir em variáveis locais da função que lança as tarefas, sem introduzir possibilidade de erros e sem requerer mecanismos como contagem de referências dos dados.
+
+No SmallVCM-rs a \emph{rayon} permitiu a paralelização utilizando um estilo similar as diretivas \texttt{\#pragma} OpenMP utilizadas pelo SmallVCM. Ao invés de ser utilizado um \texttt{parallel for}, são criadas tarefas correspondentes aos objetos \texttt{Renderer} disponíveis, normalmente um por \emph{core}. Partes do código implementando isto podem ser vistas na \autoref{code:parallel}, junto com o correspondente código do SmallVCM utilizando OpenMP, para comparação.
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[t]{0.48\textwidth}
+\begin{lstlisting}[language=C++]
+// Set number of used threads
+omp_set_num_threads(aConfig.mNumThreads);
+
+// Create 1 renderer per thread
+AbstractRenderer** renderers;
+renderers = new AbstractRenderer*[aConfig.mNumThreads];
+for(int i=0; i<aConfig.mNumThreads; i++) {
+	renderers[i] = CreateRenderer(aConfig, aConfig.mBaseSeed + i);
+	// ...
+}
+
+clock_t startT = clock();
+
+int iter = 0;
+if(aConfig.mMaxTime > 0) {	// ...
+} else {
+	// Iterations based loop
+	#pragma omp parallel for
+	for(iter = 0; iter < aConfig.mIterations; iter++) {
+		int threadId = omp_get_thread_num();
+		renderers[threadId]->RunIteration(iter);
+	}
+}
+
+clock_t endT = clock();
+\end{lstlisting}
+		\caption{\Cpp}
+	\end{subfigure}%
+	~~~
+	\begin{subfigure}[t]{0.48\textwidth}
+\begin{lstlisting}[language=Rust]
+let mut renderers = Vec::with_capacity(config.num_threads as uint);
+for i in range(0, config.num_threads) {
+	let mut renderer = config::create_renderer(config, config.base_seed + i as u32);
+	// ...
+	renderers.push(renderer);
+}
+
+let start_time = time::precise_time_s();
+
+let iter = match config.run_limit {
+	RunLimit::Time(max_time) => // ...
+	RunLimit::Iterations(iterations) => {
+		let mut join = rayon::Section::new();
+		let num_renderers = renderers.len();
+		for (thread_id, renderer) in renderers.iter_mut().enumerate() {
+			join.fork(&mut || {
+				for i in range_step(thread_id, iterations, num_renderers) {
+					renderer.run_iteration(i as u32);
+				}
+			});
+		}
+
+		iterations
+	},
+};
+
+let end_time = time::precise_time_s();
+\end{lstlisting}
+		\caption{Rust}
+	\end{subfigure}
+	\caption{Comparação entre \emph{enums} em C++ e Rust}
+	\label{code:parallel}
+\end{figure}
+
 \chapter{Resultados}
 
 Ao fim do trabalho, havia sido portado para Rust código suficiente do SmallVCM para executar o algoritmo \texttt{EyeLight}. Funções que não eram necessárias para este caminho de execução não foram definidas ou foram definidas como \emph{placeholders} que abortam o programa quando executadas, assim certificando que não são chamadas durante o teste. Não foram feitas mudanças algorítmicas, mas detalhes da implementação foram ajustados a medida que isto era requirido pela linguagem, como descrito no capítulo anterior, ou para produzir código mais idiomático se isto pudesse ser feito sem re-estruturações significativas do programa. Quando executados com os mesmos parâmetros, a saída da \emph{port} é fiel a do original.
