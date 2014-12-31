@@ -936,7 +936,7 @@ let end_time = time::precise_time_s();
 
 \chapter{Resultados}
 
-Ao fim do trabalho, havia sido portado para Rust código suficiente do SmallVCM para executar o algoritmo \texttt{EyeLight}. Funções que não eram necessárias para este caminho de execução não foram definidas ou foram definidas como \emph{placeholders} que abortam o programa quando executadas, assim certificando que não são chamadas durante o teste. Não foram feitas mudanças algorítmicas, mas detalhes da implementação foram ajustados a medida que isto era requirido pela linguagem, como descrito no capítulo anterior, ou para produzir código mais idiomático se isto pudesse ser feito sem re-estruturações significativas do programa. Quando executados com os mesmos parâmetros, a saída da \emph{port} é fiel a do original.
+Ao fim do trabalho, havia sido portado para Rust código suficiente do SmallVCM para executar o algoritmo \texttt{EyeLight}. Funções que não eram necessárias para este caminho de execução não foram definidas ou foram definidas como \emph{placeholders} que abortam o programa quando executadas, assim certificando que não são chamadas durante o teste. Não foram feitas mudanças algorítmicas, mas detalhes da implementação foram ajustados a medida que isto era requirido pela linguagem, como descrito no capítulo anterior, ou para produzir código mais idiomático se isto pudesse ser feito sem re-estruturações significativas do programa. Quando executados com os mesmos parâmetros, a saída da \emph{port} é fiel a do original. As observações feitas durante este processo foram documentadas neste texto, comparando a experiência fornecida ao programador pela linguagem em comparação a \Cpp.
 
 \section{Testes de Desempenho}
 
@@ -964,7 +964,7 @@ Para medir o tempo de execução do algoritmo, foi utilizada a ferramenta \textt
 
 Os tempos e as diferenças entre eles são consistentes através de várias execuções dos testes e mantém-se proporcionais ao número de iterações realizadas quando este parâmetro é alterado. Perfis de desempenho gerados utilizando o comando \texttt{perf record} não indicavam nenhum \emph{hot spot} presente em uma versão mas ausente em outra: a versão Rust era apenas cerca de 10\% rápida nas funções de intersecção geométrica, que são as mais frequentemente utilizadas durante a execução.
 
-\subsection{Discussão do Resultados}
+\subsection{Discussão dos Resultados}
 
 Analisando-se a \autoref{tab:vcm-timings} é evidente que a linguagem Rust atingiu bons resultados quanto a desempenho nesta aplicação, quando comparada ao mesmo algoritmo escrito em \Cpp. Mesmo relativo ao compilador Clang, que utiliza o mesmo \emph{back-end} de otimização e geração de código, houve uma redução consistente de cerca de 7.12\% no tempo de execução da tarefa.
 
